@@ -26,7 +26,7 @@ export default function StackNavigator() {
       }
       >
       <Stack.Screen name="Start" component={StartScreen} />
-      <Stack.Screen name="Tab" component={TabNavigator} />
+      <Stack.Screen name="Tab" component={TabNavigator} options={{headerShown:false}}/>
       <Stack.Screen name="Detail" component={DetailScreen} />
       <Stack.Screen name="Cart" component={CartScreen} />
     </Stack.Navigator>

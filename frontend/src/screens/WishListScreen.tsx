@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 
-const HomeScreen: React.FC = () => {
+const WishListScreen: React.FC = () => {
   return (
     <View>
       <Text>찜 화면입니다</Text>
@@ -9,4 +9,4 @@ const HomeScreen: React.FC = () => {
   );
 };
 
-export default HomeScreen;
+export default WishListScreen
