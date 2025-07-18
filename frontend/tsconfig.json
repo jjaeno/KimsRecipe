@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
-    "jsx": "react",
+    "jsx": "react-native",
     "moduleResolution": "node",                 // 모듈 탐색 방식 명시
     "allowJs": true,
     "skipLibCheck": true,
