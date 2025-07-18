@@ -5,22 +5,26 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import Modal from 'react-native-modal';
 const HomeScreen: React.FC = () => {
   //카테고리 선택 로직 (모달 활용)
-  const [modalVisible, setModalVisible] = useState(false)
+  const [categoryModalVisible, setcategoryModalVisible] = useState(false)
   const [category, setCategory] = useState('모든 반찬')
   const categoryData = ['모든 반찬', '밑반찬', '즉석반찬', '국탕류', '볶음류', '튀김류'];
+  //정렬 선택 로직 (모달 활용)
+  const [sortModalVisible, setsortModalVisible] = useState(false)
+  const [sort, setSort] = useState('인기순')
+  const sortData = ['인기순', '높은 가격순', '낮은 가격순']
   return (
     <View style={styles.container}>
       
       {/* 카테고리, 정렬 기능 */}
       <View style={styles.topRow}>
 
-        <TouchableOpacity style={styles.categoryContainer} onPress={()=>setModalVisible(true)}>
+        <TouchableOpacity style={styles.categoryContainer} onPress={()=>setcategoryModalVisible(true)}>
           <Text style = {styles.categoryText}>{category}</Text>
           <Icon name="arrow-drop-down" size={24} color="black"/>
         </TouchableOpacity>
 
         <View style={styles.sortContainer}>
-          <TouchableOpacity style={styles.sortButton}>
+          <TouchableOpacity style={styles.sortButton} onPress={()=>setsortModalVisible(true)}>
             <Text style={styles.sortText}>인기순</Text>
             <Icon name="arrow-drop-down" size={22} color="#797979"/>
           </TouchableOpacity>
@@ -30,8 +34,8 @@ const HomeScreen: React.FC = () => {
       </View>
       {/* 카테고리 모달 */}
       <Modal
-        isVisible={modalVisible}
-        onBackdropPress={() => setModalVisible(false)}
+        isVisible={categoryModalVisible}
+        onBackdropPress={() => setcategoryModalVisible(false)}
         backdropOpacity={0.4} //어두운 배경 투명도
         animationIn="slideInUp" //모달 열릴 때의 애니메이션
         animationOut="slideOutDown" //모달 닫힐 때의 애니메이션
@@ -52,7 +56,7 @@ const HomeScreen: React.FC = () => {
                   ]}
                   onPress={()=>{
                     setCategory(item);
-                    setModalVisible(false);
+                    setcategoryModalVisible(false);
                   }}>
                     <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>{item}</Text>
                     {isSelected && <Icon name = 'check' size={20} color='#009798'/>}
@@ -62,6 +66,38 @@ const HomeScreen: React.FC = () => {
         </View>
       </Modal>
 
+      {/* 정렬 선택 모달 */}
+      <Modal
+        isVisible={sortModalVisible}
+        onBackdropPress={() => setsortModalVisible(false)}
+        backdropOpacity={0.4} //어두운 배경 투명도
+        animationIn="slideInUp" //모달 열릴 때의 애니메이션
+        animationOut="slideOutDown" //모달 닫힐 때의 애니메이션
+        useNativeDriver //네이티브 스레드로 더 부드럽게
+        style={styles.modalContainer}
+        >
+          <View style = {styles.modalContent}>
+            <ScrollView style={{maxHeight: moderateScale(300)}}>
+              {sortData.map((item, idx) => {
+                const isSelected = item === sort;
+              return (
+                <TouchableOpacity
+                  key={idx}
+                  style={[
+                    styles.optionItem,
+                    isSelected && styles.optionItemSelected
+                  ]}
+                  onPress={()=>{
+                    setCategory(item);
+                    setcategoryModalVisible(false);
+                  }}>
+                    <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>{item}</Text>
+                    {isSelected && <Icon name = 'check' size={20} color='#009798'/>}
+                  </TouchableOpacity>
+              );})}
+          </ScrollView>
+        </View>
+      </Modal>
       <View style={styles.content}>
 
       </View>
