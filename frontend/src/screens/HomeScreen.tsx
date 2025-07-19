@@ -6,6 +6,13 @@ import Modal from 'react-native-modal';
 import { dummyData } from '../data/dummyData';
 import type {FoodItem, StoreData} from '../data/dummyData';
 import {useStore} from '../context/StoreContext';
+  //그리드뷰 넓이 계산
+  const screenWidth = Dimensions.get('window').width;
+  const ITEM_MARGIN = 1;
+  const NUM_COLUMNS = 2;
+  const H_PADDING = 32;
+  const ITEM_WIDTH = (screenWidth - H_PADDING * 2 - ITEM_MARGIN * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
+
 
 const HomeScreen: React.FC = () => {
 
@@ -17,10 +24,6 @@ const HomeScreen: React.FC = () => {
     ? Store.categories.flatMap(cat=>cat.items) //categories 안에 있던 items[]안의 객체들을 꺼내 1차원 배열로 만듬
     : [];
 
-  const screenWidth = Dimensions.get('window').width;
-  const itemMargin = moderateScale(8);
-  const numColumns = 2;
-  const cardWidth = (screenWidth - itemMargin * (numColumns * 2)) / numColumns;
   //카테고리 선택 로직 (모달 활용)
   const [categoryModalVisible, setcategoryModalVisible] = useState(false)
   const [category, setCategory] = useState('모든 반찬')
@@ -29,6 +32,10 @@ const HomeScreen: React.FC = () => {
   const [sortModalVisible, setsortModalVisible] = useState(false)
   const [sort, setSort] = useState('인기순')
   const sortData = ['인기순', '높은가격순', '낮은가격순']
+
+  //그리드뷰 <-> 리스트뷰
+  const [isGrid, setIsGrid] = useState(true);
+
   return (
     <View style={styles.container}>
       
@@ -46,7 +53,9 @@ const HomeScreen: React.FC = () => {
             <Icon name="arrow-drop-down" size={22} color="#797979"/>
           </TouchableOpacity>
           <View style={styles.devider}/>
-          <Icon name="menu" size={22} color="#797979"/>
+          <TouchableOpacity onPress={()=> setIsGrid(!isGrid)}>
+            <Icon name={isGrid ? "view-list" : "grid-view"} size={22} color="#797979"/>
+          </TouchableOpacity>
         </View>
       </View>
       {/* 카테고리 모달 */}
@@ -117,22 +126,49 @@ const HomeScreen: React.FC = () => {
       </Modal>
 
       <View style={styles.content}>
-        <FlatList
-          data={allItems}
-          numColumns={2}
-          keyExtractor={(item) => item.id}
-          renderItem={({item}) => (
-            <View style={[styles.card, {width: cardWidth}]}>
-              <Image source={item?.image} style={styles.image} resizeMode='contain'/>
-              <Text style={styles.name} numberOfLines={2}>
-                {item?.name}
-              </Text>
-              <Text style={styles.price}>
-                {item?.price.toLocaleString()}원
-              </Text>
-            </View>
-          )}
-        />
+        {isGrid ?
+          <FlatList
+            key = 'grid'
+            data={allItems}
+            numColumns={2}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{
+              paddingVertical: moderateScale(10),
+              paddingBottom: moderateScale(70),
+            }}
+            columnWrapperStyle={{justifyContent: 'space-between'}}
+            renderItem={({item}) => (
+              <View style={[styles.gridCard]}>
+                <Image source={item?.image} style={styles.gridImage} resizeMode='cover'/>
+                <Text style={styles.gridName} numberOfLines={2}>
+                  {item?.name}
+                </Text>
+                <Text style={styles.gridPrice}>
+                  {item?.price.toLocaleString()}원
+                </Text>
+              </View>
+            )}
+          />
+        :
+          <FlatList
+            key='list'
+            data={allItems}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{
+              paddingVertical: moderateScale(10),
+              paddingBottom: moderateScale(70),
+            }}
+            renderItem={({item}) => (
+              <View style={styles.listCard}>
+                <View>
+                  <Text style={styles.listName}>{item.name}</Text>
+                  <Text style={styles.listPrice}>{item.price.toLocaleString()}원</Text>
+                </View>
+                <Image source={item.image} style={styles.listImage}/>
+              </View>
+            )}
+           />
+        }
       </View>
     </View>
   );
@@ -212,34 +248,55 @@ const styles=StyleSheet.create ({
     fontSize: moderateScale(16),
     color: '#009798'
   },
-  content: {
-    flex: 1,
+  gridCard: {
+    width: ITEM_WIDTH,
+    marginBottom: moderateScale(30)
   },
-  image: {
-  width: '100%',
-  height: '40%',
-  aspectRatio: 1,
-  borderRadius: moderateScale(8),
-  marginBottom: moderateScale(8)
-},
-card: {
-  backgroundColor: '#fff',
-  borderRadius: moderateScale(12),
-  padding: moderateScale(8),
-  margin: moderateScale(4),
-  elevation: 2
-},
-name: {
-  fontSize: moderateScale(14),
-  fontWeight: '500',
-  color: '#333'
-},
-price: {
-  fontSize: moderateScale(14),
-  fontWeight: 'bold',
-  marginTop: moderateScale(4),
-  color: '#000'
-}
-
+  gridName: {
+    fontSize: moderateScale(14),
+    fontWeight: '400',
+    color: '#333'
+  },
+  gridPrice: {
+    fontSize: moderateScale(14),
+    fontWeight: 'bold',
+    marginTop: moderateScale(4),
+    color: '#000'
+  },
+  gridImage: {
+    width: '100%',
+    height: ITEM_WIDTH,
+    aspectRatio: 1,
+    borderRadius: moderateScale(15),
+    marginBottom: moderateScale(3),
+  },
+  listCard: {
+    backgroundColor: '#ffffff',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderWidth: moderateScale(1),
+    borderRadius: moderateScale(15),
+    borderColor: '#E2E2E2',
+    marginBottom: moderateScale(10),
+    paddingLeft: moderateScale(10),
+    elevation: moderateScale(2),
+  },
+  listImage: {
+    width: 110,
+    height: 110,
+    borderRadius: moderateScale(15)
+  },
+  listName: {
+    fontSize: moderateScale(13),
+    fontWeight: '400',
+    paddingTop: moderateScale(25),
+    paddingBottom: moderateScale(8),
+    paddingLeft: moderateScale(10),
+  },
+  listPrice: {
+    fontSize: moderateScale(13),
+    fontWeight: 'bold',
+    paddingLeft: moderateScale(10),
+  }
 })
 export default HomeScreen;
