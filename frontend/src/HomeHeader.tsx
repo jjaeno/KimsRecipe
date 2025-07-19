@@ -6,6 +6,8 @@ import { moderateScale } from 'react-native-size-matters';
 import type { RootStackParamList } from './navigation/StackNavigator';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Modal from 'react-native-modal';
+import { useStore } from './context/StoreContext';
+import { dummyData } from './data/dummyData';
 //홈화면 헤더 구성
 export default function HomeHeader() {
 
@@ -15,8 +17,9 @@ export default function HomeHeader() {
 
   //호점 선택 로직 (모달 활용)
   const [visible, setVisible] = useState(false);
-  const [store, setStore] = useState('킴스레시피 본점');
-  const storeData = ['킴스레시피 본점', '킴스레시피 2호점'];
+  const {selectedStoreId, setSelectedStoreId} = useStore(); //선택된 호점 id 전역 context 가져오기(기본값 본점id)
+  const Store = dummyData.find(s=>s.storeId === selectedStoreId); //Store에는 선택된 호점의 전체 객체가 저장됨(id, name, categories)
+  const StoreName = Store ? Store.storeName : '' //StoreName에는 현재 호점의 name이 저장됨
   //검색 기능 로직
   const [searchText, setSearchText] = useState('');
   return (
@@ -26,7 +29,7 @@ export default function HomeHeader() {
         <View style={styles.topRow}>
           <Icon name="arrow-back-ios" size={24} color="#ffffff" style={{marginRight:moderateScale(10)}} onPress={()=>navigation.goBack()}/>
           <TouchableOpacity style={styles.storeSelect} onPress={()=>setVisible(true)}>
-            <Text style={styles.storeText} >{store}</Text>
+            <Text style={styles.storeText} >{StoreName}</Text>
             <Icon name="arrow-drop-down" size={24} color="#ffffff"/>
           </TouchableOpacity>
         </View>
@@ -44,22 +47,22 @@ export default function HomeHeader() {
             <View style = {styles.modalContent}>
               <Text style = {styles.modalTitle}>호점 선택</Text>
               <ScrollView style={{maxHeight: moderateScale(300)}}>
-                {storeData.map((item, idx) => {
-                  const isSelected = item === store; //선택되어있는지 구분 위함
+                {dummyData.map((store) => {
+                  const isSelected = store.storeId === selectedStoreId; //선택되어있는지 구분 위함
                   return (
                   <TouchableOpacity
-                    key={idx}
+                    key={store.storeId}
                     style={[
                       styles.optionItem,
                       isSelected && styles.optionItemSelected]}
                     onPress={()=>{
-                      setStore(item);
+                      setSelectedStoreId(store.storeId);
                       setVisible(false);
                   }}>
                     <Text style={[
                       styles.optionText,
                       isSelected && styles.optionTextSelected
-                      ]}>{item}</Text>
+                      ]}>{store.storeName}</Text>
                     {isSelected && <Icon name = 'check' size={20} color='#009798'/>} 
                   </TouchableOpacity>
                 );})}

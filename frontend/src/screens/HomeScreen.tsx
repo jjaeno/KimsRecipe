@@ -1,9 +1,26 @@
 import React, {useState} from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, FlatList, Dimensions } from 'react-native';
 import { moderateScale } from 'react-native-size-matters';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Modal from 'react-native-modal';
+import { dummyData } from '../data/dummyData';
+import type {FoodItem, StoreData} from '../data/dummyData';
+import {useStore} from '../context/StoreContext';
+
 const HomeScreen: React.FC = () => {
+
+  //전역 context에 저장되어있는 현재 호점 id 가져오기
+  const {selectedStoreId} = useStore();
+  // 현재 선택된 호점
+  const Store: StoreData | undefined = dummyData.find(s=>s.storeId === selectedStoreId); //현재 호점 id에 따른 Store[]의 첫번째 인덱스 객체들이 Store에 저장됨
+  const allItems: FoodItem[] = Store
+    ? Store.categories.flatMap(cat=>cat.items) //categories 안에 있던 items[]안의 객체들을 꺼내 1차원 배열로 만듬
+    : [];
+
+  const screenWidth = Dimensions.get('window').width;
+  const itemMargin = moderateScale(8);
+  const numColumns = 2;
+  const cardWidth = (screenWidth - itemMargin * (numColumns * 2)) / numColumns;
   //카테고리 선택 로직 (모달 활용)
   const [categoryModalVisible, setcategoryModalVisible] = useState(false)
   const [category, setCategory] = useState('모든 반찬')
@@ -11,7 +28,7 @@ const HomeScreen: React.FC = () => {
   //정렬 선택 로직 (모달 활용)
   const [sortModalVisible, setsortModalVisible] = useState(false)
   const [sort, setSort] = useState('인기순')
-  const sortData = ['인기순', '높은 가격순', '낮은 가격순']
+  const sortData = ['인기순', '높은가격순', '낮은가격순']
   return (
     <View style={styles.container}>
       
@@ -25,7 +42,7 @@ const HomeScreen: React.FC = () => {
 
         <View style={styles.sortContainer}>
           <TouchableOpacity style={styles.sortButton} onPress={()=>setsortModalVisible(true)}>
-            <Text style={styles.sortText}>인기순</Text>
+            <Text style={styles.sortText}>{sort}</Text>
             <Icon name="arrow-drop-down" size={22} color="#797979"/>
           </TouchableOpacity>
           <View style={styles.devider}/>
@@ -88,8 +105,8 @@ const HomeScreen: React.FC = () => {
                     isSelected && styles.optionItemSelected
                   ]}
                   onPress={()=>{
-                    setCategory(item);
-                    setcategoryModalVisible(false);
+                    setSort(item);
+                    setsortModalVisible(false);
                   }}>
                     <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>{item}</Text>
                     {isSelected && <Icon name = 'check' size={20} color='#009798'/>}
@@ -98,8 +115,24 @@ const HomeScreen: React.FC = () => {
           </ScrollView>
         </View>
       </Modal>
-      <View style={styles.content}>
 
+      <View style={styles.content}>
+        <FlatList
+          data={allItems}
+          numColumns={2}
+          keyExtractor={(item) => item.id}
+          renderItem={({item}) => (
+            <View style={[styles.card, {width: cardWidth}]}>
+              <Image source={item?.image} style={styles.image} resizeMode='contain'/>
+              <Text style={styles.name} numberOfLines={2}>
+                {item?.name}
+              </Text>
+              <Text style={styles.price}>
+                {item?.price.toLocaleString()}원
+              </Text>
+            </View>
+          )}
+        />
       </View>
     </View>
   );
@@ -117,7 +150,7 @@ const styles=StyleSheet.create ({
     marginVertical: moderateScale(20),
   },
   categoryContainer: {
-    width: moderateScale(220),
+    width: moderateScale(200),
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
@@ -125,6 +158,9 @@ const styles=StyleSheet.create ({
     borderRadius: moderateScale(20),
     elevation: moderateScale(6),
     paddingVertical: moderateScale(5)
+  },
+  categoryText: {
+    
   },
   sortContainer: {
     flexDirection: 'row',
@@ -175,6 +211,35 @@ const styles=StyleSheet.create ({
   optionTextSelected: {
     fontSize: moderateScale(16),
     color: '#009798'
-  },  
+  },
+  content: {
+    flex: 1,
+  },
+  image: {
+  width: '100%',
+  height: '40%',
+  aspectRatio: 1,
+  borderRadius: moderateScale(8),
+  marginBottom: moderateScale(8)
+},
+card: {
+  backgroundColor: '#fff',
+  borderRadius: moderateScale(12),
+  padding: moderateScale(8),
+  margin: moderateScale(4),
+  elevation: 2
+},
+name: {
+  fontSize: moderateScale(14),
+  fontWeight: '500',
+  color: '#333'
+},
+price: {
+  fontSize: moderateScale(14),
+  fontWeight: 'bold',
+  marginTop: moderateScale(4),
+  color: '#000'
+}
+
 })
 export default HomeScreen;

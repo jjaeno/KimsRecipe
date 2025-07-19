@@ -1,14 +1,14 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import StackNavigator from './src/navigation/StackNavigator';
-import { PaperProvider } from 'react-native-paper';
+import { StoreProvider } from './src/context/StoreContext';
 
 export default function App () {
   return (
-    <PaperProvider>
+    <StoreProvider>
       <NavigationContainer>
         <StackNavigator/>
       </NavigationContainer>
-    </PaperProvider>
+    </StoreProvider>
   );
 };
