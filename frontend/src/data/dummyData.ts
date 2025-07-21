@@ -1,16 +1,16 @@
-type StoreData = {
+export type StoreData = {
   storeId: string;
   storeName: string;
   categories: Category[];
 };
 
-type Category = {
+export type Category = {
   categoryId: string;
   categoryName: string;
   items: FoodItem[];
 };
 
-type FoodItem = {
+export type FoodItem = {
   id: string;
   name: string;
   price: number;
@@ -27,7 +27,7 @@ export const dummyData: StoreData[] = [
         categoryId: 'cat1',
         categoryName: '즉석반찬',
         items: [
-          { id: 'item1', name: '건파래무침', price: 4900, image: require('../assets/image1.jpg'), popularity: 120 },
+          { id: 'item1', name: '건파래무침', price: 4900, image: require('../assets/image1.jpg'), popularity: 120},
           { id: 'item2', name: '건두부무침', price: 4500, image: require('../assets/image2.jpg'), popularity: 80 },
           { id: 'item3', name: '건가지나물', price: 4500, image: require('../assets/image3.jpg'), popularity: 120 },
           { id: 'item4', name: '감자채볶음', price: 4500, image: require('../assets/image4.jpg'), popularity: 120 },
