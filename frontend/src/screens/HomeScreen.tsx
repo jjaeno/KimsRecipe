@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, FlatList, Dimensions } from 'react-native';
 import { moderateScale } from 'react-native-size-matters';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -6,6 +6,19 @@ import Modal from 'react-native-modal';
 import { dummyData } from '../data/dummyData';
 import type {FoodItem, StoreData} from '../data/dummyData';
 import {useStore} from '../context/StoreContext';
+//네비게이션 import
+import { CompositeScreenProps } from '@react-navigation/native';
+import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../navigation/StackNavigator';
+import type { TabParamList } from '../navigation/TabNavigator';
+
+//네비게이션 타입 지정(Compisite은 Stack, Tab 둘 다 커버 가능)
+type Props = CompositeScreenProps<
+  BottomTabScreenProps<TabParamList, 'Home'>,
+  NativeStackScreenProps<RootStackParamList>
+>;
+
   //그리드뷰 넓이 계산
   const screenWidth = Dimensions.get('window').width;
   const ITEM_MARGIN = 1;
@@ -14,14 +27,21 @@ import {useStore} from '../context/StoreContext';
   const ITEM_WIDTH = (screenWidth - H_PADDING * 2 - ITEM_MARGIN * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
 
 
-const HomeScreen: React.FC = () => {
+const HomeScreen: React.FC<Props> = ({navigation}) => {
 
   //전역 context에 저장되어있는 현재 호점 id 가져오기
   const {selectedStoreId} = useStore();
-  // 현재 선택된 호점
+  //전역에 저장된 검색어 가져오기
+  const {searchText} = useStore();
+  // 데이터 따오기 
   const Store: StoreData | undefined = dummyData.find(s=>s.storeId === selectedStoreId); //현재 호점 id에 따른 Store[]의 첫번째 인덱스 객체들이 Store에 저장됨
-  const allItems: FoodItem[] = Store
-    ? Store.categories.flatMap(cat=>cat.items) //categories 안에 있던 items[]안의 객체들을 꺼내 1차원 배열로 만듬
+  //categories 안에 있던 items[]안의 객체들을 꺼내 1차원 배열로 만듬(여기서 카테고리 이름도 따옴)
+  const allItems: (FoodItem & {categoryName: string })[] = Store
+    ? Store.categories.flatMap(cat=>cat.items.map(item => ({
+      ...item,
+      categoryName: cat.categoryName 
+    }))
+   )  
     : [];
 
   //카테고리 선택 로직 (모달 활용)
@@ -35,6 +55,30 @@ const HomeScreen: React.FC = () => {
 
   //그리드뷰 <-> 리스트뷰
   const [isGrid, setIsGrid] = useState(true);
+
+  //카테고리, 검색, 정렬 필터 로직(기능)
+  const filteredAndSortedItems = useMemo(()=> {
+    let result = [...allItems];
+    //카테고리 필터
+    if (category != '모든 반찬') {
+      result = result.filter(item=>item.categoryName === category);
+    }
+    //검색 필터
+    if(searchText.trim() !== '') {
+      result = result.filter(item => 
+        item.name.toLowerCase().includes(searchText.toLowerCase())
+      );
+    }
+    //정렬 필터
+    if(sort === '인기순') {
+      result.sort((a,b) => b.popularity - a.popularity);
+    } else if(sort === '높은가격순') {
+      result.sort((a,b) => b.price - a.price);
+    } else if(sort === '낮은가격순') {
+      result.sort((a,b) => a.price - b.price);
+    }
+    return result;
+  }, [allItems, category, sort, searchText])
 
   return (
     <View style={styles.container}>
@@ -124,12 +168,13 @@ const HomeScreen: React.FC = () => {
           </ScrollView>
         </View>
       </Modal>
-
+      
       <View style={styles.content}>
+        {/* 그리드뷰 */}
         {isGrid ?
           <FlatList
             key = 'grid'
-            data={allItems}
+            data={filteredAndSortedItems}
             numColumns={2}
             keyExtractor={(item) => item.id}
             contentContainerStyle={{
@@ -138,7 +183,7 @@ const HomeScreen: React.FC = () => {
             }}
             columnWrapperStyle={{justifyContent: 'space-between'}}
             renderItem={({item}) => (
-              <View style={[styles.gridCard]}>
+              <TouchableOpacity style={[styles.gridCard]} onPress={()=> navigation.navigate('Detail', {foodId: item.id})}>
                 <Image source={item?.image} style={styles.gridImage} resizeMode='cover'/>
                 <Text style={styles.gridName} numberOfLines={2}>
                   {item?.name}
@@ -146,26 +191,27 @@ const HomeScreen: React.FC = () => {
                 <Text style={styles.gridPrice}>
                   {item?.price.toLocaleString()}원
                 </Text>
-              </View>
+              </TouchableOpacity>
             )}
           />
         :
+        //리스트뷰
           <FlatList
             key='list'
-            data={allItems}
+            data={filteredAndSortedItems}
             keyExtractor={(item) => item.id}
             contentContainerStyle={{
               paddingVertical: moderateScale(10),
               paddingBottom: moderateScale(70),
             }}
             renderItem={({item}) => (
-              <View style={styles.listCard}>
+              <TouchableOpacity style={styles.listCard} onPress={() => navigation.navigate('Detail', {foodId : item.id})}>
                 <View>
                   <Text style={styles.listName}>{item.name}</Text>
                   <Text style={styles.listPrice}>{item.price.toLocaleString()}원</Text>
                 </View>
                 <Image source={item.image} style={styles.listImage}/>
-              </View>
+              </TouchableOpacity>
             )}
            />
         }

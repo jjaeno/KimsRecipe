@@ -8,7 +8,7 @@ import TabNavigator from './TabNavigator';
 export type RootStackParamList = {
   Start: undefined;
   Tab: undefined;
-  Detail: undefined;
+  Detail: {foodId: string};
   Cart: undefined;
 };
 
@@ -27,7 +27,7 @@ export default function StackNavigator() {
       >
       <Stack.Screen name="Start" component={StartScreen} />
       <Stack.Screen name="Tab" component={TabNavigator} options={{headerShown:false}}/>
-      <Stack.Screen name="Detail" component={DetailScreen} />
+      <Stack.Screen name="Detail" component={DetailScreen} options={{headerShown: false}}/>
       <Stack.Screen name="Cart" component={CartScreen} />
     </Stack.Navigator>
   );

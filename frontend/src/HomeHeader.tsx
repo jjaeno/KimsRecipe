@@ -21,7 +21,7 @@ export default function HomeHeader() {
   const Store = dummyData.find(s=>s.storeId === selectedStoreId); //Store에는 선택된 호점의 전체 객체가 저장됨(id, name, categories)
   const StoreName = Store ? Store.storeName : '' //StoreName에는 현재 호점의 name이 저장됨
   //검색 기능 로직
-  const [searchText, setSearchText] = useState('');
+  const {searchText, setSearchText} = useStore();
   return (
       <View style={styles.headerContainer}>
 
@@ -79,10 +79,9 @@ export default function HomeHeader() {
                 placeholderTextColor='#999'
                 style={styles.searchInput}
                 value={searchText}
-                onChangeText={setSearchText}
-                onSubmitEditing={()=> {
-                  console.log('검색어:', searchText); //내부 로직 작성 예정
-                }}/>
+                onChangeText={(text) => {setSearchText(text);}}
+                
+                />
               </View>
             <Icon name="shopping-cart" size={24} color="#fff" style={{marginLeft:'auto'}} onPress={()=>navigation.navigate('Cart')} />
         </View>
