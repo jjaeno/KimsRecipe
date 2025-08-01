@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 'react-native';
+import React, { useState} from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, BackHandler } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import { moderateScale } from 'react-native-size-matters';
@@ -22,6 +22,7 @@ export default function HomeHeader() {
   const StoreName = Store ? Store.storeName : '' //StoreName에는 현재 호점의 name이 저장됨
   //검색 기능 로직
   const {searchText, setSearchText} = useStore();
+
   return (
       <View style={styles.headerContainer}>
 
