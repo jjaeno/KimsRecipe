@@ -30,7 +30,7 @@ export default function StackNavigator() {
       }
       >
       <Stack.Screen name="Start" component={StartScreen} />
-      <Stack.Screen name="Login" component={LoginScreen} options={{ title: '로그인' }} />
+      <Stack.Screen name="Login" component={LoginScreen} options={{ title: '로그인' , headerShown:false}} />
       <Stack.Screen name="Signup" component={SignupScreen} options={{ title: '회원가입' }} />
       <Stack.Screen name="Tab" component={TabNavigator} options={{headerShown:false}}/>
       <Stack.Screen name="Detail" component={DetailScreen} options={{headerShown: false}}/>

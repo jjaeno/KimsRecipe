@@ -4,7 +4,7 @@ const db = require('../db');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 
-const JWT_SECRET = 
+const JWT_SECRET = process.env.JWT_SECRET;
 
 router.get('/ping', (req, res) => {
   res.status(200).json({ message: 'Server is alive!' });

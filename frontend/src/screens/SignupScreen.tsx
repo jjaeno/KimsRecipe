@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/StackNavigator';
-
+import { moderateScale } from 'react-native-size-matters';
+import { API_AUTH_DEVICE } from '@env';
 
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Signup'>;
@@ -19,7 +20,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
    // if (!username.trim()) return Alert.alert('아이디를 입력해주세요.');
 
     try {
-      const res = await fetch(`${API_BASE}/check-username?username=${username.trim()}`, {
+      const res = await fetch(`${API_AUTH_DEVICE}/check-username?username=${username.trim()}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -39,7 +40,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
      }
 
     try {
-      const res = await fetch(`${API_BASE}/signUp`, {
+      const res = await fetch(`${API_AUTH_DEVICE}/signUp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, name, password, confirmPassword, phone }),
@@ -47,6 +48,10 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
 
       const data = await res.json();
       setMessage(data.message || JSON.stringify(data));
+      if (data.success){
+        Alert.alert('회원가입 성공', '로그인 페이지로 이동합니다.')
+        navigation.goBack();
+      }
     } catch (error) {
       console.error(error);
       setMessage('회원가입 실패');
@@ -55,24 +60,21 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>회원가입</Text>
-      <TextInput style={styles.input} placeholder="아이디" value={username} onChangeText={setUsername} />
+      <View style={styles.idContainer}>
+        <TextInput style={styles.idInput} placeholder="아이디" value={username} onChangeText={setUsername} />
+        <TouchableOpacity style={styles.idcheckButton} onPress={checkUsername}>
+          <Text style={styles.idcheckText}>중복 확인</Text>
+        </TouchableOpacity>
+      </View>
       <TextInput style={styles.input} placeholder="이름" value={name} onChangeText={setName} />
       <TextInput style={styles.input} placeholder="비밀번호" secureTextEntry value={password} onChangeText={setPassword} />
       <TextInput style={styles.input} placeholder="비밀번호 확인" secureTextEntry value={confirmPassword} onChangeText={setConfirmPassword} />
       <TextInput style={styles.input} placeholder="전화번호(선택)" value={phone} onChangeText={setPhone} />
-
-      <TouchableOpacity style={styles.button} onPress={checkUsername}>
-        <Text style={styles.buttonText}>아이디 중복 확인</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.button} onPress={register}>
-        <Text style={styles.buttonText}>회원가입</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={[styles.button, { backgroundColor: '#2196F3' }]} onPress={() => navigation.navigate('Login')}>
-        <Text style={styles.buttonText}>로그인 페이지로</Text>
-      </TouchableOpacity>
       <Text style={styles.message}>{message}</Text>
+      
+      <TouchableOpacity style={styles.signupButton} onPress={register}>
+        <Text style={styles.signupText}>회원가입</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -80,10 +82,52 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
 export default RegisterScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  title: { fontSize: 20, fontWeight: 'bold', marginTop: 20 },
-  input: { borderWidth: 1, borderColor: '#ccc', padding: 10, marginTop: 10, borderRadius: 8 },
-  button: { backgroundColor: '#4CAF50', padding: 12, borderRadius: 8, marginTop: 10 },
-  buttonText: { color: '#fff', textAlign: 'center', fontWeight: 'bold' },
-  message: { marginTop: 20, color: 'blue', textAlign: 'center' },
+  container: { flex: 1, padding: moderateScale(20), paddingTop: moderateScale(40), backgroundColor: '#fff' },
+    idContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      //justifyContent: 'space-between'
+    },
+    idInput: {
+      flex: 1,
+      borderBottomWidth: 1, 
+      borderColor: '#ccc', 
+      marginBottom: moderateScale(20),
+      marginRight: moderateScale(20),
+    },
+    idcheckButton: {
+      backgroundColor: '#009798',
+      borderRadius: moderateScale(10),
+      marginBottom: moderateScale(15)
+    },
+    idcheckText: {
+      fontSize: moderateScale(11),
+      fontWeight: 'bold',
+      color: '#ffffff',
+      padding: moderateScale(10),
+
+    },
+    input: {
+      borderBottomWidth: 1, 
+      borderColor: '#ccc', 
+      marginBottom: moderateScale(20),
+    },
+    message: {
+      fontSize: moderateScale(12),
+      color: 'red',
+    },
+    signupButton: {
+      width: '100%',
+      height: moderateScale(50),
+      backgroundColor: '#009798',
+      borderRadius: moderateScale(10),
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: moderateScale(20)
+    },
+    signupText: {
+      fontSize: moderateScale(16),
+      fontWeight: 'bold',
+      color: '#ffffff',
+    },
 });

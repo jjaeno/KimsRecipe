@@ -1,3 +1,4 @@
+require('dotenv').config(); //환경변수
 const express = require('express');
 const cors = require('cors');
 

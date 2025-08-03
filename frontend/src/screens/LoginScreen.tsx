@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/StackNavigator';
+import Icon  from 'react-native-vector-icons/MaterialIcons'
+import { moderateScale } from 'react-native-size-matters';
+import AsyncStorage from '@react-native-async-storage/async-storage'; //토큰 저장을 위함
+import {API_AUTH_DEVICE} from '@env';
 
-const API_BASE = 
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
@@ -12,13 +15,24 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
 
+  /*----로그인했던 사용자는 자동 로그인(추후에 splashScreen에 넣어야함)----*/
+  useEffect(() => {
+    const checkToken = async () => {
+      const token = await AsyncStorage.getItem('token');
+      if (token) {
+        navigation.replace('Start');
+      }
+    }
+    checkToken();
+  }, []);
+
   const login = async () => {
-     if (!username || !password) {
-       return Alert.alert('아이디와 비밀번호를 입력하세요.');
-     }
+    //  if (!username || !password) {
+    //    return Alert.alert('아이디와 비밀번호를 입력하세요.');
+    //  }
 
     try {
-      const res = await fetch(`${API_BASE}/login`, {
+      const res = await fetch(`${API_AUTH_DEVICE}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: username.trim(), password }),
@@ -31,9 +45,11 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       }
       if (data.success) {
         navigation.reset({
-        index: 0,
-        routes: [{ name: 'Start'}],
-      });
+          index: 0,
+          routes: [{ name: 'Start'}],
+        });
+        await AsyncStorage.setItem('token', data.token);
+        console.log('로컬에 저장된 토큰:', AsyncStorage.getItem('token'));
       }
       
     } catch (error) {
@@ -44,18 +60,28 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>로그인</Text>
-      <TextInput style={styles.input} placeholder="아이디" value={username} onChangeText={setUsername} />
-      <TextInput style={styles.input} placeholder="비밀번호" secureTextEntry value={password} onChangeText={setPassword} />
-      <TouchableOpacity style={styles.button} onPress={login}>
-        <Text style={styles.buttonText}>로그인</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={[styles.button, { backgroundColor: '#2196F3' }]} onPress={() => navigation.navigate('Signup')}>
-        <Text style={styles.buttonText}>회원가입 페이지로</Text>
-      </TouchableOpacity>
-
+      <View style={styles.titleContainer}>
+        <Text style={styles.title}>Kims'Recipe</Text>
+      </View>
+      <View style={styles.authContainer}>
+        <Text style={styles.authText}>아이디</Text>
+        <TextInput style={styles.input} value={username} onChangeText={setUsername} />
+      </View>
+      <View style={styles.authContainer}>
+        <Text style={styles.authText}>비밀번호</Text>
+        <TextInput style={styles.input} secureTextEntry value={password} onChangeText={setPassword} />
+      </View>
       <Text style={styles.message}>{message}</Text>
+      <TouchableOpacity style={styles.loginButton} onPress={login}>
+        <Text style={styles.loginText}>로그인</Text>
+      </TouchableOpacity>
+
+
+      <TouchableOpacity style={styles.signupButton} onPress={() => navigation.navigate('Signup')}>
+        <Text style={styles.signupText}>아직 회원이 아닌가요? 회원가입</Text>
+        <Icon name = "arrow-forward-ios" size={12} color="black" style={{marginTop: moderateScale(2)}}/>
+      </TouchableOpacity>
+      
     </View>
   );
 };
@@ -63,10 +89,55 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 export default LoginScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  title: { fontSize: 20, fontWeight: 'bold', marginTop: 20 },
-  input: { borderWidth: 1, borderColor: '#ccc', padding: 10, marginTop: 10, borderRadius: 8 },
-  button: { backgroundColor: '#4CAF50', padding: 12, borderRadius: 8, marginTop: 10 },
-  buttonText: { color: '#fff', textAlign: 'center', fontWeight: 'bold' },
-  message: { marginTop: 20, color: 'blue', textAlign: 'center' },
+  container: { flex: 1, paddingHorizontal: moderateScale(20), backgroundColor: '#ffffff' },
+  titleContainer: {
+    alignItems: 'center',
+    marginTop: moderateScale(80),
+    marginBottom: moderateScale(100)
+  },
+  title: { 
+    fontSize: moderateScale(35), 
+    fontWeight: 'bold',
+    color: '#009798'
+  },
+  authContainer: {
+    marginBottom: moderateScale(15),
+    justifyContent: 'flex-start'
+  },
+  authText: {
+    fontSize: moderateScale(12),
+    fontWeight: 'bold'
+  },
+  input: { 
+    borderBottomWidth: 1, 
+    borderColor: '#ccc', 
+  },
+  message: {
+    fontSize: moderateScale(12),
+    color: 'red',
+  },
+  loginButton: {
+    width: '100%',
+    height: moderateScale(50),
+    backgroundColor: '#009798',
+    borderRadius: moderateScale(10),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: moderateScale(20)
+  },
+  loginText: {
+    fontSize: moderateScale(16),
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  signupButton: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: '70%'
+  },
+  signupText: {
+    fontSize: moderateScale(13),
+    marginRight: moderateScale(3)
+  }
 });
