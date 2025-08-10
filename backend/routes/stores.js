@@ -10,7 +10,7 @@ router.get('/getAll', async (_req, res) => {
       SELECT
         s.storeId, s.storeName,
         c.categoryId, c.categoryName,
-        m.storeMenuId, m.menuName, m.description, m.price, m.imageUrl, m.popularity
+        m.storeMenuId, m.menuName, m.description, m.price, m.imageUrl, m.popularity, m.amount
       FROM stores s
       LEFT JOIN categories c
         ON c.storeId = s.storeId
@@ -60,6 +60,7 @@ router.get('/getAll', async (_req, res) => {
         price: Number(r.price),
         image: r.imageUrl,
         popularity: Number(r.popularity),
+        amount: String(r.amount)
       });
     }
 

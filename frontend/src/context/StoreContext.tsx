@@ -28,6 +28,7 @@ type StoreItem = {
     price: number;
     image: any;
     popularity: number;
+    amount: string;
 }
 
 //id 하나로 전체 데이터에 접근 가능하게 평탄화

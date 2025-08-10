@@ -175,7 +175,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
         </View>
       </Modal>
       
-      <View style={styles.content}>
+      <View>
         {/* 그리드뷰 */}
         {isGrid ?
           <FlatList
