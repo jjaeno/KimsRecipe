@@ -17,9 +17,8 @@ export default function HomeHeader() {
 
   //호점 선택 로직 (모달 활용)
   const [visible, setVisible] = useState(false);
-  const {selectedStoreId, setSelectedStoreId} = useStore(); //선택된 호점 id 전역 context 가져오기(기본값 본점id)
-  const Store = dummyData.find(s=>s.storeId === selectedStoreId); //Store에는 선택된 호점의 전체 객체가 저장됨(id, name, categories)
-  const StoreName = Store ? Store.storeName : '' //StoreName에는 현재 호점의 name이 저장됨
+  const {stores, selectedStoreId, setSelectedStoreId} = useStore(); //선택된 호점 id 전역 context 가져오기(기본값 본점id)
+  const StoreName = stores.find(s=> s.storeId === selectedStoreId)?.storeName; //선택된 호점 id의 이름을 찾음
   //검색 기능 로직
   const {searchText, setSearchText} = useStore();
 
@@ -48,7 +47,12 @@ export default function HomeHeader() {
             <View style = {styles.modalContent}>
               <Text style = {styles.modalTitle}>호점 선택</Text>
               <ScrollView style={{maxHeight: moderateScale(300)}}>
-                {dummyData.map((store) => {
+                {stores.length === 0? (
+                  <Text style={{paddingVertical: moderateScale(16), color: '#666'}}>
+                    불러올 호점이 없습니다.
+                  </Text>
+                ) : (
+                stores.map((store) => {
                   const isSelected = store.storeId === selectedStoreId; //선택되어있는지 구분 위함
                   return (
                   <TouchableOpacity
@@ -66,7 +70,9 @@ export default function HomeHeader() {
                       ]}>{store.storeName}</Text>
                     {isSelected && <Icon name = 'check' size={20} color='#009798'/>} 
                   </TouchableOpacity>
-                );})}
+                );})
+                )}
+                
             </ScrollView>
           </View>
         </Modal>

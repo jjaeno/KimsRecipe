@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "326221875246",
+    "project_id": "kimsrecipe-92759",
+    "storage_bucket": "kimsrecipe-92759.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:326221875246:android:e8a8cce8722f9f91e877bf",
+        "android_client_info": {
+          "package_name": "com.kimsrecipe"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBhHLl2eXPt_tquJtghHfC2U_tJuVli1Jk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

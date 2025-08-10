@@ -3,8 +3,6 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, FlatList, 
 import { moderateScale } from 'react-native-size-matters';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Modal from 'react-native-modal';
-import { dummyData } from '../data/dummyData';
-import type {FoodItem, StoreData} from '../data/dummyData';
 import {useStore} from '../context/StoreContext';
 //네비게이션 import
 import { CompositeScreenProps } from '@react-navigation/native';
@@ -26,28 +24,36 @@ type Props = CompositeScreenProps<
   const H_PADDING = 32;
   const ITEM_WIDTH = (screenWidth - H_PADDING * 2 - ITEM_MARGIN * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
 
-
 const HomeScreen: React.FC<Props> = ({navigation}) => {
 
-  //전역 context에 저장되어있는 현재 호점 id 가져오기
-  const {selectedStoreId} = useStore();
-  //전역에 저장된 검색어 가져오기
-  const {searchText} = useStore();
-  // 데이터 따오기 
-  const Store: StoreData | undefined = dummyData.find(s=>s.storeId === selectedStoreId); //현재 호점 id에 따른 Store[]의 첫번째 인덱스 객체들이 Store에 저장됨
-  //categories 안에 있던 items[]안의 객체들을 꺼내 1차원 배열로 만듬(여기서 카테고리 이름도 따옴)
-  const allItems: (FoodItem & {categoryName: string })[] = Store
-    ? Store.categories.flatMap(cat=>cat.items.map(item => ({
-      ...item,
-      categoryName: cat.categoryName 
-    }))
-   )  
-    : [];
+  const {stores, selectedStoreId, searchText} = useStore();
+
+  // 현재 선택된 지점
+  const selectedStore = useMemo(
+    () => stores.find(s => s.storeId === selectedStoreId) ?? null,
+    [stores, selectedStoreId]
+  );
+
+  // 평탄화 : 카테고리 이름을 아이템에 붙이기
+  const allItems = useMemo(() => {
+    if(!selectedStore?.categories) return [];
+    return selectedStore.categories.flatMap(cat => 
+      cat.items.map(item => ({
+        ...item,
+        categoryId: cat.categoryId,
+        categoryName: cat.categoryName,
+      }))
+    );
+  }, [selectedStore]);
 
   //카테고리 선택 로직 (모달 활용)
   const [categoryModalVisible, setcategoryModalVisible] = useState(false)
   const [category, setCategory] = useState('모든 반찬')
-  const categoryData = ['모든 반찬', '밑반찬', '즉석반찬', '국탕류', '볶음류', '튀김류'];
+  //카테고리 목록
+  const categoryData = useMemo(() => {
+    const names = selectedStore?.categories?.map(c=> c.categoryName) ?? [];
+    return ['모든 반찬', ...Array.from(new Set(names))];
+  }, [selectedStore]);
   //정렬 선택 로직 (모달 활용)
   const [sortModalVisible, setsortModalVisible] = useState(false)
   const [sort, setSort] = useState('인기순')
@@ -184,7 +190,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
             columnWrapperStyle={{justifyContent: 'space-between'}}
             renderItem={({item}) => (
               <TouchableOpacity style={[styles.gridCard]} onPress={()=> navigation.navigate('Detail', {foodId: item.id})}>
-                <Image source={item?.image} style={styles.gridImage} resizeMode='cover'/>
+                <Image source={{ uri: item?.image}} style={styles.gridImage} resizeMode='cover'/>
                 <Text style={styles.gridName} numberOfLines={2}>
                   {item?.name}
                 </Text>
@@ -210,7 +216,7 @@ const HomeScreen: React.FC<Props> = ({navigation}) => {
                   <Text style={styles.listName}>{item.name}</Text>
                   <Text style={styles.listPrice}>{item.price.toLocaleString()}원</Text>
                 </View>
-                <Image source={item.image} style={styles.listImage}/>
+                <Image source={{uri: item.image}} style={styles.listImage}/>
               </TouchableOpacity>
             )}
            />
