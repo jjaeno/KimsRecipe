@@ -5,7 +5,7 @@ import { RootStackParamList } from '../navigation/StackNavigator';
 import Icon  from 'react-native-vector-icons/MaterialIcons'
 import { moderateScale } from 'react-native-size-matters';
 import AsyncStorage from '@react-native-async-storage/async-storage'; //토큰 저장을 위함
-import {API_AUTH_DEVICE} from '@env';
+import {API_AMULATOR} from '@env';
 
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
@@ -32,7 +32,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     //  }
 
     try {
-      const res = await fetch(`${API_AUTH_DEVICE}/login`, {
+      const res = await fetch(`${API_AMULATOR}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: username.trim(), password }),
