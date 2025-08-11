@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
     paddingVertical: moderateScale(20),
     backgroundColor: '#ffffff',
     borderColor: '#979797',
-    borderWidth: moderateScale(0.1),
+    borderWidth: moderateScale(0.2),
     position: 'absolute',
     bottom:0,
     left:0,
@@ -186,8 +186,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#009798',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: moderateScale(40),
-    paddingVertical: moderateScale(5),
+    width: moderateScale(160),
+    height: moderateScale(30),
     borderRadius: moderateScale(5)
   }
 })
