@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Button, Image, StyleSheet, Pressable } from 'react-native';
+import { View, Text, Button, Image, StyleSheet, Pressable, TouchableOpacity, ScrollView } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/StackNavigator';
 import { useStore } from '../context/StoreContext';
@@ -12,9 +12,12 @@ const DetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const {foodId} = route.params;
   const item = flatItems.find(i => i.id === foodId);
 
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState(1); //수량
   const plus = () => setQuantity(q => q + 1);
   const minus = () => setQuantity(q => Math.max(1, q-1)); //최솟값: 1
+
+  const totalPrice = (Number(item?.price)) * quantity;
+
   return (
     <View style={styles.container}>
       <Image source={{uri: item?.image}} style={styles.image}/>
@@ -25,7 +28,7 @@ const DetailScreen: React.FC<Props> = ({ navigation, route }) => {
           <Icon name="shopping-cart" size={24} color="#ffffff" style={{marginRight:1}} onPress={()=>navigation.goBack()}/>
         </View>
       </View>
-      <View style={styles.content}>
+      <ScrollView style={styles.content} contentContainerStyle={{paddingBottom: moderateScale(50)}}>
         <View style={styles.explainContainer}>
           <Text style={styles.name}>{item?.name}</Text>
           <Text style={styles.description}>{item?.description}</Text>
@@ -41,13 +44,26 @@ const DetailScreen: React.FC<Props> = ({ navigation, route }) => {
           </View>
         </View>
         <View style={styles.countContainer}>
-          <Text>수량</Text>
+          <Text style={{fontWeight: '800'}}>수량</Text>
           <View style={styles.quantityContainer}>
-            <Pressable onPress = {minus}><Text>-</Text></Pressable>
-            <Text>{quantity}</Text>
-            <Pressable onPress = {plus}><Text>+</Text></Pressable>
+            <TouchableOpacity onPress={minus}>
+              <Text style={styles.minusBtn}>-</Text>
+            </TouchableOpacity>
+            <Text style={styles.quantity}>{quantity}</Text>
+            <TouchableOpacity onPress={plus}>
+              <Text style={styles.plusBtn}>+</Text>
+            </TouchableOpacity>
           </View>
         </View>
+      </ScrollView>
+      <View style={styles.cartContainer}>
+        <View style={styles.minPayContainer}>
+          <Text style={styles.minPayText}>택배 최소 주문 금액</Text>
+          <Text style={styles.minPayText}>25,000원</Text>
+        </View>
+        <TouchableOpacity style={styles.addToCart}>
+          <Text style={{fontSize: moderateScale(12), color: '#ffffff', fontWeight: '400'}}>{totalPrice.toLocaleString()}원 담기</Text>
+        </TouchableOpacity>
       </View>
     </View>
 
@@ -74,13 +90,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: 'rgba(0,0,0,0.02)'
-
   },
   headerCombine: {
     flexDirection: 'row'
   },
   content: {
-    paddingHorizontal: moderateScale(16)
+    paddingHorizontal: moderateScale(16),
   },
   explainContainer: {
     marginVertical: moderateScale(20),
@@ -117,10 +132,63 @@ const styles = StyleSheet.create({
   },
   countContainer: {
     flexDirection: 'row',
-    padding: moderateScale(20),
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: moderateScale(15),
     borderRadius: moderateScale(20),
     backgroundColor: '#ffffff',
     elevation: moderateScale(3)
+  },
+  quantityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  minusBtn: {
+    fontSize: moderateScale(30),
+    width: moderateScale(40),
+    textAlign: 'center',
+  },
+  quantity: {
+    fontSize: moderateScale(18),
+    width: moderateScale(40),
+    textAlign: 'center',
+    fontWeight: '500'
+  },
+  plusBtn: {
+    width: moderateScale(40),
+    fontSize: moderateScale(20),
+    textAlign: 'center'
+  },
+  cartContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopLeftRadius: moderateScale(10),
+    borderTopRightRadius: moderateScale(10),
+    paddingHorizontal: moderateScale(16),
+    paddingVertical: moderateScale(20),
+    backgroundColor: '#ffffff',
+    borderColor: '#979797',
+    borderWidth: moderateScale(0.1),
+    position: 'absolute',
+    bottom:0,
+    left:0,
+    right:0,
+
+  },
+  minPayContainer: {},
+  minPayText: {
+    marginBottom: moderateScale(2),
+    fontSize: moderateScale(10),
+    color: '#979797'
+  },
+  addToCart: {
+    backgroundColor: '#009798',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: moderateScale(40),
+    paddingVertical: moderateScale(5),
+    borderRadius: moderateScale(5)
   }
 })
 

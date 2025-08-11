@@ -71,7 +71,7 @@ export const StoreProvider: React.FC<{children: ReactNode}> = ({children}) => {
     useEffect(() => {
         const fetchStores = async () => {
             try {
-                const res = await fetch('${API_AMULATOR}/auth/stores/getAll',{
+                const res = await fetch(`${API_AMULATOR}/stores/getAll`,{
                     method: 'GET',
                     headers: {
                         'Content-Type':'application/json'
@@ -92,6 +92,7 @@ export const StoreProvider: React.FC<{children: ReactNode}> = ({children}) => {
                 setStores(data);
                 //앱 시작 시 저장되어있던 호점으로 복원
                 const savedId = await AsyncStorage.getItem(SELECTED_STORE_KEY);
+                console.log('스토어 아이디: ', data[0].storeId);
                 if (savedId && data.some(s=> s.storeId === savedId)) {
                     _setSelectedStoreId(savedId);
                 } else if (data.length > 0) {
@@ -99,7 +100,7 @@ export const StoreProvider: React.FC<{children: ReactNode}> = ({children}) => {
                     await setSelectedStoreId(data[0].storeId);
                 }
             } catch (err) {
-                console.error('호점 목록 불러오기 실패:', err);
+                console.error('메뉴,호점,카테고리 데이터 불러오기 실패:', err);
             }
         };
         fetchStores();
