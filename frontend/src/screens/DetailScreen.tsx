@@ -37,7 +37,7 @@ const DetailScreen: React.FC<Props> = ({ navigation, route }) => {
           <Text style={{fontSize: moderateScale(14), fontWeight: '800', marginLeft: moderateScale(2)}}>가격</Text>
           <View style={styles.detailPriceContainer}>
             <View style={styles.amountWithIcon}>
-            <Icon name='adjust' size={24} color="#1E7160"/>
+            <Icon name='radio-button-checked' size={21} color="#1E7160"/>
             <Text style={styles.amount}>{item?.amount}</Text>
             </View>
             <Text style={{fontWeight: '600'}}>{item?.price.toLocaleString()}원</Text>
@@ -62,7 +62,7 @@ const DetailScreen: React.FC<Props> = ({ navigation, route }) => {
           <Text style={styles.minPayText}>25,000원</Text>
         </View>
         <TouchableOpacity style={styles.addToCart}>
-          <Text style={{fontSize: moderateScale(12), color: '#ffffff', fontWeight: '400'}}>{totalPrice.toLocaleString()}원 담기</Text>
+          <Text style={{fontSize: moderateScale(13), color: '#ffffff', fontWeight: '400'}}>{totalPrice.toLocaleString()}원 담기</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: moderateScale(10),
-    paddingTop: moderateScale(10),
+    paddingTop: moderateScale(15),
     paddingBottom: moderateScale(10),
     position: 'absolute',
     top: 0,
@@ -127,8 +127,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row'
   },
   amount: {
-    marginLeft: moderateScale(5),
-    paddingTop: moderateScale(2),
+    marginLeft: moderateScale(6),
+    paddingTop: moderateScale(1),
   },
   countContainer: {
     flexDirection: 'row',
@@ -179,15 +179,15 @@ const styles = StyleSheet.create({
   minPayContainer: {},
   minPayText: {
     marginBottom: moderateScale(2),
-    fontSize: moderateScale(10),
+    fontSize: moderateScale(11),
     color: '#979797'
   },
   addToCart: {
     backgroundColor: '#009798',
     justifyContent: 'center',
     alignItems: 'center',
-    width: moderateScale(160),
-    height: moderateScale(30),
+    width: moderateScale(190),
+    height: moderateScale(40),
     borderRadius: moderateScale(5)
   }
 })

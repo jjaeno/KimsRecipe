@@ -63,7 +63,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       <View style={styles.titleContainer}>
         <Image
           source={require('../assets/image/icon.png')}
-          style={{width: '100%', height: '100%', resizeMode: 'contain'}}
+          style={{width: '50%', height: '40%', resizeMode: 'contain'}}
         />
       </View>
       <View style={styles.authContainer}>
