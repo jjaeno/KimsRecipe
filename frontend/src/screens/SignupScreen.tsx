@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'reac
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/StackNavigator';
 import { moderateScale } from 'react-native-size-matters';
-import { API_AMULATOR } from '@env';
+import { API_DEVICE } from '@env';
 
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Signup'>;
@@ -20,7 +20,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
    // if (!username.trim()) return Alert.alert('아이디를 입력해주세요.');
 
     try {
-      const res = await fetch(`${API_AMULATOR}/auth/check-username?username=${username.trim()}`, {
+      const res = await fetch(`${API_DEVICE}/auth/check-username?username=${username.trim()}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -40,7 +40,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
      }
 
     try {
-      const res = await fetch(`${API_AMULATOR}/auth/signUp`, {
+      const res = await fetch(`${API_DEVICE}/auth/signUp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, name, password, confirmPassword, phone }),

@@ -7,7 +7,7 @@ import React, {
   ReactNode,
   useMemo
 } from 'react';
-import { API_AMULATOR } from '@env';
+import { API_DEVICE } from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 //백엔드에서 받을 데이터의 타입 정의
@@ -71,7 +71,7 @@ export const StoreProvider: React.FC<{children: ReactNode}> = ({children}) => {
     useEffect(() => {
         const fetchStores = async () => {
             try {
-                const res = await fetch(`${API_AMULATOR}/stores/getAll`,{
+                const res = await fetch(`${API_DEVICE}/stores/getAll`,{
                     method: 'GET',
                     headers: {
                         'Content-Type':'application/json'
