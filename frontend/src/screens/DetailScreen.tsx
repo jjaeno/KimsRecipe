@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, Button, Image, StyleSheet, Pressable, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, Button, Image, StyleSheet, Pressable, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/StackNavigator';
 import { useStore } from '../context/StoreContext';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { moderateScale } from 'react-native-size-matters';
+import { useCart } from '../context/CartContext';
+
+
 type Props = NativeStackScreenProps<RootStackParamList, 'Detail'>;
 
 const DetailScreen: React.FC<Props> = ({ navigation, route }) => {
@@ -18,6 +21,25 @@ const DetailScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const totalPrice = (Number(item?.price)) * quantity;
 
+  const {addToCart} = useCart();
+  const handleAddToCart = async () => {
+    if (!item) return;
+    const ok = await addToCart({
+      storeMenuId: String(item.id),
+      name: item.name,
+      description: item.description ?? '',
+      price: Number(item.price),
+      image: item.image,
+      amount: item.amount ?? '',
+      quantity,
+      storeId: String(selectedStoreId),
+    });
+    if (ok) {
+      Alert.alert('담기 완료', '장바구니에 담았습니다.');
+    } else {
+      Alert.alert('담기 실패', '알 수 없는 오류;')
+    }
+  }
   return (
     <View style={styles.container}>
       <Image source={{uri: item?.image}} style={styles.image}/>
@@ -61,7 +83,7 @@ const DetailScreen: React.FC<Props> = ({ navigation, route }) => {
           <Text style={styles.minPayText}>택배 최소 주문 금액</Text>
           <Text style={styles.minPayText}>25,000원</Text>
         </View>
-        <TouchableOpacity style={styles.addToCart}>
+        <TouchableOpacity style={styles.addToCart} onPress={handleAddToCart}>
           <Text style={{fontSize: moderateScale(13), color: '#ffffff', fontWeight: '400'}}>{totalPrice.toLocaleString()}원 담기</Text>
         </TouchableOpacity>
       </View>

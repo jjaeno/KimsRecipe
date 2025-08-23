@@ -1,4 +1,4 @@
-//전역으로 호점 상태 저장(storeId로 저장함)
+{/*전역 변수로 서버에서 메뉴, 호점 데이터를 받아와서 저장함*/}
 import React, {
   createContext,
   useContext,
@@ -66,6 +66,7 @@ export const StoreProvider: React.FC<{children: ReactNode}> = ({children}) => {
     const setSelectedStoreId = async (id: string) => {
         _setSelectedStoreId(id);
         await AsyncStorage.setItem(SELECTED_STORE_KEY, id);
+        console.log('변경되어 로컬에 저장된 스토어 아이디: ', id);
     };
     // 앱 시작 시 호점 목록, 카테고리, 메뉴 데이터를 받아옴
     useEffect(() => {
@@ -92,7 +93,7 @@ export const StoreProvider: React.FC<{children: ReactNode}> = ({children}) => {
                 setStores(data);
                 //앱 시작 시 저장되어있던 호점으로 복원
                 const savedId = await AsyncStorage.getItem(SELECTED_STORE_KEY);
-                console.log('스토어 아이디: ', data[0].storeId);
+                console.log('스토어 아이디: ', savedId);
                 if (savedId && data.some(s=> s.storeId === savedId)) {
                     _setSelectedStoreId(savedId);
                 } else if (data.length > 0) {

@@ -111,36 +111,4 @@ router.post('/login', async(req, res) => {
     }
 });
 
-/*----jwt 인증 미들웨어----*/
-function authMiddleware(req, res, next) {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader & authHeader.split(' ')[1]; //"Bearer <token>"
-
-    if (!token) {
-        return res.status(401).json({success: false, message: '토큰이 없습니다.'});
-    }
-    try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        req.user = decoded; //다음 라우터에서 req.user를 유저 정보로 바로 사용 가능
-        next();
-    } catch (err) {
-        console.error('JWT 인증 오류: ', err);
-        return res.status(403).json({success: false, message: '유효하지 않은 토큰입니다.'});
-    }
-};
-router.get('/profile', authMiddleware, async (req, res) => {
-  try {
-    // req.user에서 JWT payload 접근 가능
-    const { userId, username } = req.user;
-
-    return res.status(200).json({
-      success: true,
-      message: '사용자 프로필 정보',
-      data: { userId, username },
-    });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, message: '서버 오류' });
-  }
-});
 module.exports = router;

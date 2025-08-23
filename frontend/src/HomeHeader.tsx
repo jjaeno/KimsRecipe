@@ -7,7 +7,6 @@ import type { RootStackParamList } from './navigation/StackNavigator';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Modal from 'react-native-modal';
 import { useStore } from './context/StoreContext';
-import { dummyData } from './data/dummyData';
 //홈화면 헤더 구성
 export default function HomeHeader() {
 
@@ -90,7 +89,7 @@ export default function HomeHeader() {
                 
                 />
               </View>
-            <Icon name="shopping-cart" size={24} color="#fff" style={{marginLeft:'auto'}} onPress={()=>navigation.navigate('Cart')} />
+            <Icon name="shopping-cart" size={24} color="#fff" style={{marginLeft:'auto', marginTop: 4}} onPress={()=>navigation.navigate('Cart')} />
         </View>
     </View>
   );

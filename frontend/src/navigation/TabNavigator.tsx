@@ -5,6 +5,8 @@ import WishListScreen from '../screens/WishListScreen';
 import OrderHistoryScreen from '../screens/OrderHistoryScreen';
 import MypageScreen from '../screens/MypageScreen';
 import HomeHeader from '../HomeHeader';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import { moderateScale } from 'react-native-size-matters';
 export type TabParamList = {
   Home: undefined;
   Wishlist: undefined;
@@ -16,11 +18,43 @@ const Tab = createBottomTabNavigator<TabParamList>();
 
 export default function TabNavigator (){
   return (
-    <Tab.Navigator screenOptions={{ headerShown: true }}>
-      <Tab.Screen name="Home" component={HomeScreen}  options={{header: () => <HomeHeader/>}}/>
-      <Tab.Screen name="Wishlist" component={WishListScreen} />
-      <Tab.Screen name="Orders" component={OrderHistoryScreen} />
-      <Tab.Screen name="Mypage" component={MypageScreen} />
+    <Tab.Navigator screenOptions={({route}) => ({
+      tabBarLabelStyle: {fontSize: moderateScale(10), fontWeight: '600'},
+      tabBarStyle: {
+        height: moderateScale(50),
+        backgroundColor: '#ffffff',
+        borderTopWidth: 0,
+      },
+      tabBarIcon: ({focused, color, size}) => {
+        let iconName: string = '';
+
+        switch (route.name) {
+          case 'Home':
+            iconName = 'home-filled';
+            break;
+          case 'Wishlist':
+            iconName = 'favorite';
+            size = 23;
+            break;
+          case 'Orders':
+            iconName = 'receipt-long';
+            size = 23;
+            break;
+          case 'Mypage':
+            iconName = 'person';
+            size = 30;
+            break;
+        }
+        return <Icon name = {iconName} size={size} color={color}/>;
+      },
+      tabBarActiveTintColor: '#009798',
+      tabBarInactiveTintColor: 'gray',
+    })}
+  >
+      <Tab.Screen name="Home" component={HomeScreen}  options={{header: () => <HomeHeader/>, tabBarLabel: '홈'}}/>
+      <Tab.Screen name="Wishlist" component={WishListScreen} options={{tabBarLabel: '찜'}}/>
+      <Tab.Screen name="Orders" component={OrderHistoryScreen} options={{tabBarLabel: '주문내역'}}/>
+      <Tab.Screen name="Mypage" component={MypageScreen} options={{tabBarLabel: '마이페이지'}}/>
     </Tab.Navigator>
   );
 };

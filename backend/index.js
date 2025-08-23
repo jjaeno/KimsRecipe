@@ -17,7 +17,8 @@ const authRoutes = require('./routes/auth')
 app.use('/api/auth', authRoutes); //회원가입, 로그인, 아이디 중복 확인 api
 const storeRoutes = require('./routes/stores')
 app.use('/api/stores', storeRoutes); //호점 목록 불러오기 api
-
+const cartRoutes = require('./routes/cart')
+app.use('/api/cart', cartRoutes); //장바구니 api
 
 
 
