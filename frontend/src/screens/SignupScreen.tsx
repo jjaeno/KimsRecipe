@@ -20,7 +20,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
    // if (!username.trim()) return Alert.alert('아이디를 입력해주세요.');
 
     try {
-      const res = await fetch(`${API_DEVICE}/auth/check-username?username=${username.trim()}`, {
+      const res = await fetch(`${API_DEVICE}/v1/auth/check-username?username=${username.trim()}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -40,7 +40,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
      }
 
     try {
-      const res = await fetch(`${API_DEVICE}/auth/signUp`, {
+      const res = await fetch(`${API_DEVICE}/v1/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, name, password, confirmPassword, phone }),

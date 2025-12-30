@@ -32,7 +32,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     //  }
 
     try {
-      const res = await fetch(`${API_DEVICE}/auth/login`, {
+      // v1 로그인: /api/v1/auth/login (API_DEVICE가 /api까지 포함)
+      const res = await fetch(`${API_DEVICE}/v1/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: username.trim(), password }),
@@ -40,15 +41,16 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       const data = await res.json();
       setMessage(data.message || JSON.stringify(data));
 
-      if (data.token) {
-        console.log('JWT Token:', data.token);
+      const token = data?.data?.token;
+      if (token) {
+        console.log('JWT Token:', token);
       }
-      if (data.success) {
+      if (data.success && token) {
         navigation.reset({
           index: 0,
           routes: [{ name: 'Start'}],
         });
-        await AsyncStorage.setItem('token', data.token);
+        await AsyncStorage.setItem('token', token);
         console.log('로컬에 저장된 토큰:', AsyncStorage.getItem('token'));
       }
       

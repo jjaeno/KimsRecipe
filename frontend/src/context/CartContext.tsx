@@ -37,7 +37,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             if (!token) {
                 throw new Error('토큰 없음');
             }
-            const response = await fetch(`${API_DEVICE}/cart/getCart`, {
+            const response = await fetch(`${API_DEVICE}/v1/cart`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -47,7 +47,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             if (!response.ok || !data.success) {
                 throw new Error(data.message);
             }
-            setCartItems(data.items);
+            // v1 ??? data? cartId/storeId/items ??
+            setCartItems(data.data?.items ?? []);
             console.log('서버의 장바구니 불러오기 성공', data.items);
         } catch (err) {
             console.log('장바구니 불러오기 에러: ', err);
@@ -68,7 +69,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
                 storeMenuId: Number(item.storeMenuId),
                 quantity: Number(item.quantity),
             };
-            const response = await fetch(`${API_DEVICE}/cart/addCart`, {
+            const response = await fetch(`${API_DEVICE}/v1/cart/items`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -95,7 +96,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             const token = await AsyncStorage.getItem('token');
             if (!token) throw new Error('토큰 없음');
 
-            const response = await fetch(`${API_DEVICE}/cart/remove`, {
+            const response = await fetch(`${API_DEVICE}/v1/cart/items/${storeMenuId}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -118,7 +119,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             const token = await AsyncStorage.getItem('token');
             if (!token) throw new Error('토큰 없음');
 
-            const response = await fetch(`${API_DEVICE}/cart/clear`, {
+            const response = await fetch(`${API_DEVICE}/v1/cart`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
