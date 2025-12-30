@@ -1,24 +1,11 @@
-require('dotenv').config(); //환경변수
-const express = require('express');
-const cors = require('cors');
+// Responsibility: 서버 부트스트랩 엔트리. 환경 변수를 로드하고 src/app.js에서 조립된 Express 애플리케이션을 실행한다. 여기서는 listen만 담당하며 비즈니스 로직이나 라우팅은 app.js에 위임한다.
+// 하지 않는 일: 라우팅/미들웨어/에러 처리 구현. 순수하게 서버 기동만 수행.
 
+require('dotenv').config();
+const app = require('./src/app');
 
-const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
-app.use(express.json());
-
 app.listen(PORT, () => {
-  console.log(`서버 실행 중: http://localhost:${PORT}`);
+  console.log(`서버 실행 중 http://localhost:${PORT}`);
 });
-
-const authRoutes = require('./routes/auth')
-app.use('/api/auth', authRoutes); //회원가입, 로그인, 아이디 중복 확인 api
-const storeRoutes = require('./routes/stores')
-app.use('/api/stores', storeRoutes); //호점 목록 불러오기 api
-const cartRoutes = require('./routes/cart')
-app.use('/api/cart', cartRoutes); //장바구니 api
-
-
-
