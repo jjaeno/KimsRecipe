@@ -1,72 +1,57 @@
+// Responsibility: 로그인 화면. 사용자 입력을 받아 v1 로그인 API를 호출하고 토큰을 저장한 뒤 Start 화면으로 이동한다. 네트워크 호출은 api/auth.api.ts에 위임한다.
+
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/StackNavigator';
-import Icon  from 'react-native-vector-icons/MaterialIcons'
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import { moderateScale } from 'react-native-size-matters';
-import AsyncStorage from '@react-native-async-storage/async-storage'; //토큰 저장을 위함
-import {API_DEVICE} from '@env';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { login as loginApi } from '../api/auth.api';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
+/**
+ * 로그인 화면
+ * - 입력된 username/password로 v1 로그인 API 호출
+ * - 성공 시 토큰 저장 후 Start 화면으로 이동
+ * - 실패 시 메시지 표시
+ */
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
 
-  /*----로그인했던 사용자는 자동 로그인(추후에 splashScreen에 넣어야함)----*/
+  // 이미 토큰이 있으면 바로 Start로 이동
   useEffect(() => {
     const checkToken = async () => {
       const token = await AsyncStorage.getItem('token');
       if (token) {
         navigation.replace('Start');
       }
-    }
+    };
     checkToken();
-  }, []);
+  }, [navigation]);
 
   const login = async () => {
-    //  if (!username || !password) {
-    //    return Alert.alert('아이디와 비밀번호를 입력하세요.');
-    //  }
-
     try {
-      // v1 로그인: /api/v1/auth/login (API_DEVICE가 /api까지 포함)
-      const res = await fetch(`${API_DEVICE}/v1/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim(), password }),
+      const result = await loginApi({ username: username.trim(), password });
+      const token = result.token;
+      setMessage('로그인 성공');
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Start' }],
       });
-      const data = await res.json();
-      setMessage(data.message || JSON.stringify(data));
-
-      const token = data?.data?.token;
-      if (token) {
-        console.log('JWT Token:', token);
-      }
-      if (data.success && token) {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Start'}],
-        });
-        await AsyncStorage.setItem('token', token);
-        console.log('로컬에 저장된 토큰:', AsyncStorage.getItem('token'));
-      }
-      
-    } catch (error) {
-      console.error(error);
-      setMessage('로그인 실패');
+      await AsyncStorage.setItem('token', token);
+    } catch (error: any) {
+      setMessage(error?.message || '로그인 실패');
     }
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.titleContainer}>
-        <Image
-          source={require('../assets/image/icon.png')}
-          style={{width: '50%', height: '40%', resizeMode: 'contain'}}
-        />
+        <Image source={require('../assets/image/icon.png')} style={{ width: '50%', height: '40%', resizeMode: 'contain' }} />
       </View>
       <View style={styles.authContainer}>
         <Text style={styles.authText}>아이디</Text>
@@ -81,12 +66,10 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         <Text style={styles.loginText}>로그인</Text>
       </TouchableOpacity>
 
-
       <TouchableOpacity style={styles.signupButton} onPress={() => navigation.navigate('Signup')}>
         <Text style={styles.signupText}>아직 회원이 아닌가요? 회원가입</Text>
-        <Icon name = "arrow-forward-ios" size={12} color="black" style={{marginTop: moderateScale(2)}}/>
+        <Icon name="arrow-forward-ios" size={12} color="black" style={{ marginTop: moderateScale(2) }} />
       </TouchableOpacity>
-      
     </View>
   );
 };
@@ -94,30 +77,25 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 export default LoginScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: moderateScale(20), backgroundColor: '#ffffff', },
+  container: { flex: 1, paddingHorizontal: moderateScale(20), backgroundColor: '#ffffff' },
   titleContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     height: moderateScale(190),
     marginTop: moderateScale(25),
-    marginBottom: moderateScale(25)
-  },
-  title: { 
-    fontSize: moderateScale(35), 
-    fontWeight: 'bold',
-    color: '#009798'
+    marginBottom: moderateScale(25),
   },
   authContainer: {
     marginBottom: moderateScale(15),
-    justifyContent: 'flex-start'
+    justifyContent: 'flex-start',
   },
   authText: {
     fontSize: moderateScale(12),
-    fontWeight: 'bold'
+    fontWeight: 'bold',
   },
-  input: { 
-    borderBottomWidth: 1, 
-    borderColor: '#ccc', 
+  input: {
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
   },
   message: {
     fontSize: moderateScale(12),
@@ -130,7 +108,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(10),
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: moderateScale(20)
+    marginTop: moderateScale(20),
   },
   loginText: {
     fontSize: moderateScale(16),
@@ -141,10 +119,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: '70%'
+    marginTop: '70%',
   },
   signupText: {
     fontSize: moderateScale(13),
-    marginRight: moderateScale(3)
-  }
+    marginRight: moderateScale(3),
+  },
 });

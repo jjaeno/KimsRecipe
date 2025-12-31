@@ -1,3 +1,5 @@
+// Responsibility: 하단 탭 네비게이션 설정. 각 탭 아이콘/레이블과 Home 헤더를 지정한다.
+
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text } from 'react-native';
@@ -5,7 +7,7 @@ import HomeScreen from '../screens/HomeScreen';
 import WishListScreen from '../screens/WishListScreen';
 import OrderHistoryScreen from '../screens/OrderHistoryScreen';
 import MypageScreen from '../screens/MypageScreen';
-import HomeHeader from '../HomeHeader';
+import HomeHeader from '../components/HomeHeader';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { moderateScale } from 'react-native-size-matters';
 
@@ -19,9 +21,7 @@ export type TabParamList = {
 const Tab = createBottomTabNavigator<TabParamList>();
 
 const makeLabel = (label: string) => ({ color }: { color: string }) => (
-  <Text style={{ color, fontSize: moderateScale(10), fontWeight: '600' }}>
-    {label}
-  </Text>
+  <Text style={{ color, fontSize: moderateScale(10), fontWeight: '600' }}>{label}</Text>
 );
 
 export default function TabNavigator() {
@@ -35,26 +35,27 @@ export default function TabNavigator() {
         },
         tabBarIcon: ({ color, size }) => {
           let iconName = 'help-outline';
+          let iconSize = size;
 
           switch (route.name) {
             case 'Home':
-              iconName = 'home';        // ✅ 수정
+              iconName = 'home';
               break;
             case 'Wishlist':
               iconName = 'favorite';
-              size = 23;
+              iconSize = 23;
               break;
             case 'Orders':
               iconName = 'receipt-long';
-              size = 23;
+              iconSize = 23;
               break;
             case 'Mypage':
               iconName = 'person';
-              size = 30;
+              iconSize = 30;
               break;
           }
 
-          return <Icon name={iconName} size={size} color={color} />;
+          return <Icon name={iconName} size={iconSize} color={color} />;
         },
         tabBarActiveTintColor: '#009798',
         tabBarInactiveTintColor: 'gray',
@@ -68,21 +69,9 @@ export default function TabNavigator() {
           tabBarLabel: makeLabel('홈'),
         }}
       />
-      <Tab.Screen
-        name="Wishlist"
-        component={WishListScreen}
-        options={{ tabBarLabel: makeLabel('찜') }}
-      />
-      <Tab.Screen
-        name="Orders"
-        component={OrderHistoryScreen}
-        options={{ tabBarLabel: makeLabel('주문내역') }}
-      />
-      <Tab.Screen
-        name="Mypage"
-        component={MypageScreen}
-        options={{ tabBarLabel: makeLabel('마이페이지') }}
-      />
+      <Tab.Screen name="Wishlist" component={WishListScreen} options={{ tabBarLabel: makeLabel('찜') }} />
+      <Tab.Screen name="Orders" component={OrderHistoryScreen} options={{ tabBarLabel: makeLabel('주문내역') }} />
+      <Tab.Screen name="Mypage" component={MypageScreen} options={{ tabBarLabel: makeLabel('마이페이지') }} />
     </Tab.Navigator>
   );
 }

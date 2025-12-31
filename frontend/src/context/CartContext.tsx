@@ -1,152 +1,114 @@
+// Responsibility: 장바구니 상태를 전역으로 관리한다. 네트워크 호출은 api/cart.api.ts에 위임하고, 여기서는 상태/로딩/에러와 add/remove/clear 동작만 노출한다.
+
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_DEVICE } from '@env';
+import { CartItem } from '../types/cart';
+import { getCart, addCartItem, removeCartItem, clearCart as clearCartApi } from '../api/cart.api';
 
-// 장바구니 항목 타입 정의
-type CartItem = {
-    storeMenuId: string;
-    name: string;
-    description: string;
-    price: number;
-    image: any;
-    amount: string;
-    quantity: number;
-    storeId: string;
-};
-
-// Context 내부 타입 정의
 type CartContextType = {
-    cartItems: CartItem[]; // 장바구니 항목
-    loadCartFromServer: () => Promise<void>; //서버에서 장바구니 불러오기
-    addToCart: (item: CartItem) => Promise<boolean>; // 항목 추가 함수
-    removeFromCart: (storeMenuId: string) => Promise<void>; // 항목 삭제
-    clearCart: () => Promise<void>; //전체 삭제
+  cartItems: CartItem[];
+  loading: boolean;
+  error: string | null;
+  loadCartFromServer: () => Promise<void>;
+  addToCart: (item: CartItem) => Promise<boolean>;
+  removeFromCart: (storeMenuId: string) => Promise<void>;
+  clearCart: () => Promise<void>;
 };
 
-// Context 생성
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-// 장바구니 상태 제공
+/**
+ * CartProvider
+ * - cartItems, loading, error 상태를 관리한다.
+ * - 네트워크 호출은 api/cart.api.ts에 위임하고, 상태 업데이트/에러 저장만 수행한다.
+ * - addToCart는 화면 Alert 분기를 위해 boolean을 반환한다.
+ */
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-    const [cartItems, setCartItems] = useState<CartItem[]>([]); // 상태 초기화
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    //서버의 장바구니 불러오기
-    const loadCartFromServer = async () => {
-        try {
-            const token = await AsyncStorage.getItem('token');
-            if (!token) {
-                throw new Error('토큰 없음');
-            }
-            const response = await fetch(`${API_DEVICE}/v1/cart`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            const data = await response.json();
-            if (!response.ok || !data.success) {
-                throw new Error(data.message);
-            }
-            // v1 ??? data? cartId/storeId/items ??
-            setCartItems(data.data?.items ?? []);
-            console.log('서버의 장바구니 불러오기 성공', data.items);
-        } catch (err) {
-            console.log('장바구니 불러오기 에러: ', err);
-        }
+  /**
+   * 서버에서 장바구니를 불러온다.
+   * - 성공 시 cartItems 상태 업데이트
+   * - 실패 시 error 상태에 메시지 저장
+   */
+  const loadCartFromServer = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) throw new Error('액세스 토큰이 없습니다.');
+      const data = await getCart();
+      setCartItems(data.items ?? []);
+    } catch (err: any) {
+      setError(err?.message || '장바구니를 불러오지 못했습니다.');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // 장바구니에 항목 추가하는 함수
-    const addToCart = async (item: CartItem): Promise<boolean> => {
-
-        //서버로 장바구니 항목을 보냄
-        try {
-            const token = await AsyncStorage.getItem('token');
-            if (!token) {
-                throw new Error('토큰 없음');
-            }
-            const body = {
-                storeId: Number(item.storeId),
-                storeMenuId: Number(item.storeMenuId),
-                quantity: Number(item.quantity),
-            };
-            const response = await fetch(`${API_DEVICE}/v1/cart/items`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(body)
-            });
-            const data = await response.json();
-            if (!response.ok || !data.success) {
-                throw new Error(data.message);
-            }
-            console.log('추가 후 장바구니 상태', cartItems);
-            //성공 시 서버 장바구니 재로드
-            await loadCartFromServer();
-            return true;
-        } catch (err) {
-            console.log('장바구니 서버 에러', err);
-            return false;
-        }
-    };
-
-    const removeFromCart = async (storeMenuId: string) => {
-        try {
-            const token = await AsyncStorage.getItem('token');
-            if (!token) throw new Error('토큰 없음');
-
-            const response = await fetch(`${API_DEVICE}/v1/cart/items/${storeMenuId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({storeMenuId}) // <- 객체 형태로 보내기
-            });
-            const data = await response.json();
-            if (!response.ok || !data.success) {
-                throw new Error(data.message)
-            }
-            console.log('삭제 후 장바구니 상태', cartItems);
-            await loadCartFromServer();
-        } catch (err) {
-            console.log('장바구니 에러: ', err);
-        }
-    };
-    const clearCart = async () => {
-        try {
-            const token = await AsyncStorage.getItem('token');
-            if (!token) throw new Error('토큰 없음');
-
-            const response = await fetch(`${API_DEVICE}/v1/cart`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            const data = await response.json();
-            if (!response.ok || !data.success) {
-                throw new Error(data.message)
-            }
-            console.log('전체 삭제 후 장바구니 상태', cartItems);
-            await loadCartFromServer();
-        } catch (err) {
-            console.log('장바구니 서버 에러', err);
-        }
+  /**
+   * 장바구니에 항목을 추가한다.
+   * @returns 성공 여부 (화면에서 Alert 분기에 사용)
+   */
+  const addToCart = async (item: CartItem): Promise<boolean> => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) throw new Error('액세스 토큰이 없습니다.');
+      await addCartItem(Number(item.storeId), Number(item.storeMenuId), Number(item.quantity));
+      await loadCartFromServer();
+      return true;
+    } catch (err: any) {
+      setError(err?.message || '장바구니 추가 중 오류가 발생했습니다.');
+      return false;
     }
+  };
 
-    return (
-        <CartContext.Provider value={{ cartItems, addToCart, removeFromCart, clearCart, loadCartFromServer }}>
-            {children}
-        </CartContext.Provider>
-    );
+  /**
+   * 장바구니에서 특정 메뉴를 삭제한다.
+   */
+  const removeFromCart = async (storeMenuId: string) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) throw new Error('액세스 토큰이 없습니다.');
+      await removeCartItem(Number(storeMenuId));
+      await loadCartFromServer();
+    } catch (err: any) {
+      setError(err?.message || '장바구니 항목 삭제 중 오류가 발생했습니다.');
+    }
+  };
+
+  /**
+   * 장바구니를 비운다.
+   */
+  const clearCart = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) throw new Error('액세스 토큰이 없습니다.');
+      await clearCartApi();
+      await loadCartFromServer();
+    } catch (err: any) {
+      setError(err?.message || '장바구니 초기화 중 오류가 발생했습니다.');
+    }
+  };
+
+  return (
+    <CartContext.Provider
+      value={{ cartItems, loading, error, loadCartFromServer, addToCart, removeFromCart, clearCart }}
+    >
+      {children}
+    </CartContext.Provider>
+  );
 };
 
-// 커스텀 훅으로 다른 컴포넌트에서 사용 가능
+/**
+ * CartContext 훅
+ * @returns CartContext 값
+ * @throws Error Provider 밖에서 사용 시
+ */
 export const useCart = () => {
-    const context = useContext(CartContext);
-    if (!context) throw new Error('useCart must be used within a CartProvider');
-    return context;
+  const context = useContext(CartContext);
+  if (!context) throw new Error('useCart must be used within a CartProvider');
+  return context;
 };
