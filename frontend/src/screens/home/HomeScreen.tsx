@@ -15,12 +15,12 @@ import {
 import { moderateScale } from 'react-native-size-matters';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import Modal from 'react-native-modal';
-import { useStore } from '../context/StoreContext';
+import { useStore } from '../../context/StoreContext';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../navigation/StackNavigator';
-import type { TabParamList } from '../navigation/TabNavigator';
+import type { RootStackParamList } from '../../navigation/StackNavigator';
+import type { TabParamList } from '../../navigation/TabNavigator';
 
 // 그리드 카드 가로폭 계산
 const screenWidth = Dimensions.get('window').width;

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, StyleSheet } from 'react-native';
-import { useCart } from '../context/CartContext';
-import { useStore } from '../context/StoreContext';
+import { useCart } from '../../context/CartContext';
+import { useStore } from '../../context/StoreContext';
 
 export default function CartScreen() {
   const { cartItems, loadCartFromServer, removeFromCart, clearCart } = useCart();

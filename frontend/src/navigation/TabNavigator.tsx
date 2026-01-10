@@ -3,10 +3,10 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text } from 'react-native';
-import HomeScreen from '../screens/HomeScreen';
-import WishListScreen from '../screens/WishListScreen';
-import OrderHistoryScreen from '../screens/OrderHistoryScreen';
-import MypageScreen from '../screens/MypageScreen';
+import HomeScreen from '../screens/home/HomeScreen';
+import WishListScreen from '../screens/wishlist/WishListScreen';
+import OrderHistoryScreen from '../screens/orders/OrderHistoryScreen';
+import MypageScreen from '../screens/mypage/MypageScreen';
 import HomeHeader from '../components/HomeHeader';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { moderateScale } from 'react-native-size-matters';

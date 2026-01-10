@@ -3,9 +3,9 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/StackNavigator';
+import { RootStackParamList } from '../../navigation/StackNavigator';
 import { moderateScale } from 'react-native-size-matters';
-import { signup as signupApi, checkUsername as checkUsernameApi } from '../api/auth.api';
+import { signup as signupApi, checkUsername as checkUsernameApi } from '../../api/auth.api';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Signup'>;
 

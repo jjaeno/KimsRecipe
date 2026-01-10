@@ -1,11 +1,10 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import StartScreen from '../screens/StartScreen';
-import DetailScreen from '../screens/DetailScreen';
-import CartScreen from '../screens/CartScreen';
+import DetailScreen from '../screens/product/DetailScreen';
+import CartScreen from '../screens/cart/CartScreen';
 import TabNavigator from './TabNavigator';
-import LoginScreen from '../screens/LoginScreen';
-import SignupScreen from '../screens/SignupScreen';
+import LoginScreen from '../screens/auth/LoginScreen';
+import SignupScreen from '../screens/auth/SignupScreen';
 
 export type RootStackParamList = {
   Start: undefined;
@@ -29,7 +28,6 @@ export default function StackNavigator() {
       }
       }
       >
-      <Stack.Screen name="Start" component={StartScreen} options={{title: `Kims' Recipe`}}/>
       <Stack.Screen name="Login" component={LoginScreen} options={{ title: '로그인' , headerShown:false}} />
       <Stack.Screen name="Signup" component={SignupScreen} options={{ title: '회원가입' }} />
       <Stack.Screen name="Tab" component={TabNavigator} options={{headerShown:false}}/>

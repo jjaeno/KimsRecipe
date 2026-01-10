@@ -3,11 +3,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/StackNavigator';
+import { RootStackParamList } from '../../navigation/StackNavigator';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { moderateScale } from 'react-native-size-matters';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { login as loginApi } from '../api/auth.api';
+import { login as loginApi } from '../../api/auth.api';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
@@ -27,7 +27,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     const checkToken = async () => {
       const token = await AsyncStorage.getItem('token');
       if (token) {
-        navigation.replace('Start');
+        navigation.replace('Tab');
       }
     };
     checkToken();
@@ -40,7 +40,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       setMessage('로그인 성공');
       navigation.reset({
         index: 0,
-        routes: [{ name: 'Start' }],
+        routes: [{ name: 'Tab' }],
       });
       await AsyncStorage.setItem('token', token);
     } catch (error: any) {
@@ -51,7 +51,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.titleContainer}>
-        <Image source={require('../assets/image/icon.png')} style={{ width: '50%', height: '40%', resizeMode: 'contain' }} />
+        <Image source={require('../../assets/image/icon.png')} style={{ width: '50%', height: '40%', resizeMode: 'contain' }} />
       </View>
       <View style={styles.authContainer}>
         <Text style={styles.authText}>아이디</Text>

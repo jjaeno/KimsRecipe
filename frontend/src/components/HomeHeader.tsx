@@ -28,7 +28,7 @@ export default function HomeHeader() {
   return (
     <View style={styles.headerContainer}>
       <View style={styles.topRow}>
-        <Icon name="arrow-back-ios" size={24} color="#ffffff" style={{ marginRight: moderateScale(10) }} onPress={() => navigation.goBack()} />
+        {/* <Icon name="arrow-back-ios" size={24} color="#ffffff" style={{ marginRight: moderateScale(10) }} onPress={() => navigation.goBack()} /> */}
         <TouchableOpacity style={styles.storeSelect} onPress={() => setVisible(true)}>
           <Text style={styles.storeText}>{storeName}</Text>
           <Icon name="arrow-drop-down" size={24} color="#ffffff" />

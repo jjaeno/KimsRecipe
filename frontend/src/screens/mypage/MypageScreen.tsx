@@ -2,10 +2,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { RootStackParamList } from '../navigation/StackNavigator';
+import { RootStackParamList } from '../../navigation/StackNavigator';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import { TabParamList } from '../navigation/TabNavigator';
+import { TabParamList } from '../../navigation/TabNavigator';
 
 
 

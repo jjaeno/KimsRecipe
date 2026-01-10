@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, Button, Image, StyleSheet, Pressable, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/StackNavigator';
-import { useStore } from '../context/StoreContext';
+import { RootStackParamList } from '../../navigation/StackNavigator';
+import { useStore } from '../../context/StoreContext';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { moderateScale } from 'react-native-size-matters';
-import { useCart } from '../context/CartContext';
+import { useCart } from '../../context/CartContext';
 
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Detail'>;

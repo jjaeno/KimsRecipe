@@ -9,6 +9,8 @@ export const client = axios.create({
   timeout: 10000,
 });
 
+console.log('[api] baseURL:', API_DEVICE);
+
 // 요청 인터셉터: AsyncStorage에 저장된 토큰을 Authorization 헤더에 추가
 client.interceptors.request.use(async (config) => {
   try {
