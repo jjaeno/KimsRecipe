@@ -1,8 +1,14 @@
-// Responsibility: 홈파티 예약 HTTP 입출력. 인증된 사용자 정보를 Service에 전달하고, 표준 응답 포맷을 반환한다.
-// 하지 않는 일: SQL/트랜잭션, 비즈니스 규칙 판단. 에러는 next로 위임.
-
+﻿const express = require('express');
 const homePartyService = require('../services/homeParty.service');
 const { success } = require('../utils/response');
+const { auth } = require('../middleware/auth');
+
+const router = express.Router();
+
+// Frontend endpoint examples (base: /api/v1):
+// POST /api/v1/home-party/reservations
+// GET  /api/v1/home-party/reservations
+// GET  /api/v1/home-party/reservations/:reservationId
 
 async function createReservation(req, res, next) {
   try {
@@ -32,8 +38,10 @@ async function getReservation(req, res, next) {
   }
 }
 
-module.exports = {
-  createReservation,
-  listReservations,
-  getReservation,
-};
+router.post('/reservations', auth, createReservation);
+router.get('/reservations', auth, listReservations);
+router.get('/reservations/:reservationId', auth, getReservation);
+
+module.exports = router;
+
+

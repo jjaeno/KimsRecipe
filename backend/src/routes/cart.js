@@ -1,9 +1,17 @@
-// Responsibility: 장바구니 HTTP 입출력 처리. 인증된 사용자 ID를 Service로 전달하고, v1 응답 포맷으로 감싼다.
-// Controller가 하는 일: req 파싱, Service 호출, 표준 응답 래핑, 에러는 next로 전달.
-// Controller가 하지 않는 일: 트랜잭션 관리, DB 접근, 비즈니스 규칙 판단.
-
+﻿const express = require('express');
 const cartService = require('../services/cart.service');
 const { success } = require('../utils/response');
+const { auth } = require('../middleware/auth');
+
+const router = express.Router();
+
+// Frontend endpoint examples (base: /api/v1):
+// GET    /api/v1/cart
+// POST   /api/v1/cart/items
+// POST   /api/v1/cart/items/force
+// PATCH  /api/v1/cart/items/:storeMenuId
+// DELETE /api/v1/cart/items/:storeMenuId
+// DELETE /api/v1/cart
 
 async function getCart(req, res, next) {
   try {
@@ -64,11 +72,13 @@ async function clearCart(req, res, next) {
   }
 }
 
-module.exports = {
-  getCart,
-  addItem,
-  forceAddItem,
-  updateItem,
-  removeItem,
-  clearCart,
-};
+router.get('/', auth, getCart);
+router.post('/items', auth, addItem);
+router.post('/items/force', auth, forceAddItem);
+router.patch('/items/:storeMenuId', auth, updateItem);
+router.delete('/items/:storeMenuId', auth, removeItem);
+router.delete('/', auth, clearCart);
+
+module.exports = router;
+
+

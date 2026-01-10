@@ -1,9 +1,14 @@
-// Responsibility: 주문 HTTP 입출력 처리. 요청 값을 Service로 넘기고 표준 응답 포맷으로 감싼다.
-// Controller 역할: 파라미터 추출, Service 호출, 응답 래핑, 에러 next 위임.
-// 하지 않는 일: 트랜잭션 제어, SQL 실행, 비즈니스 규칙 판단.
-
+﻿const express = require('express');
 const ordersService = require('../services/orders.service');
 const { success } = require('../utils/response');
+const { auth } = require('../middleware/auth');
+
+const router = express.Router();
+
+// Frontend endpoint examples (base: /api/v1):
+// POST /api/v1/orders
+// GET  /api/v1/orders
+// GET  /api/v1/orders/:orderId
 
 async function createOrder(req, res, next) {
   try {
@@ -34,8 +39,10 @@ async function getOrderDetail(req, res, next) {
   }
 }
 
-module.exports = {
-  createOrder,
-  listOrders,
-  getOrderDetail,
-};
+router.post('/', auth, createOrder);
+router.get('/', auth, listOrders);
+router.get('/:orderId', auth, getOrderDetail);
+
+module.exports = router;
+
+

@@ -1,8 +1,11 @@
-// Responsibility: 매장/메뉴 조회 HTTP 입출력만 담당. 도메인 로직은 Service에 위임하고, 표준 응답 포맷으로 감싼다.
-// 하지 않는 일: SQL, 데이터 가공, 트랜잭션 제어. 오류는 next로 위임.
-
+﻿const express = require('express');
 const storeService = require('../services/stores.service');
 const { success } = require('../utils/response');
+
+const router = express.Router();
+
+// Frontend endpoint examples (base: /api/v1):
+// GET /api/v1/stores
 
 async function getStores(_req, res, next) {
   try {
@@ -13,6 +16,8 @@ async function getStores(_req, res, next) {
   }
 }
 
-module.exports = {
-  getStores,
-};
+router.get('/', getStores);
+
+module.exports = router;
+
+

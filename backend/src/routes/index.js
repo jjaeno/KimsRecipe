@@ -1,16 +1,26 @@
-// Responsibility: 라우팅 집결 지점. legacy 라우트(/api/*)와 신규 v1 라우트(/api/v1/*)를 모두 마운트한다.
-// 여기서 하는 일: URL prefix 결정 및 하위 라우터 연결. 하지 않는 일: 비즈니스 로직/DB 접근/응답 포맷 결정.
-
-const express = require('express');
-const legacyRouter = require('./legacy');
-const v1Router = require('./v1');
+﻿const express = require('express');
+const { success } = require('../utils/response');
+const authRoutes = require('./auth');
+const storeRoutes = require('./stores');
+const menuRoutes = require('./menus');
+const cartRoutes = require('./cart');
+const orderRoutes = require('./orders');
+const homePartyRoutes = require('./homeParty');
 
 const router = express.Router();
 
-// 기존 프론트가 사용하는 legacy 엔드포인트 유지 (/api/*)
-router.use('/api', legacyRouter);
+// Frontend endpoint examples (base: /api/v1):
+// GET /api/v1/health
+// GET /api/v1/ping
 
-// 신규 v1 엔드포인트
-router.use('/api/v1', v1Router);
+router.get('/health', (_req, res) => success(res, {}, 'pong'));
+router.get('/ping', (_req, res) => success(res, {}, 'pong'));
+
+router.use('/auth', authRoutes);
+router.use('/stores', storeRoutes);
+router.use('/menus', menuRoutes);
+router.use('/cart', cartRoutes);
+router.use('/orders', orderRoutes);
+router.use('/home-party', homePartyRoutes);
 
 module.exports = router;

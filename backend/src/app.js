@@ -12,8 +12,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 라우트 마운트 (legacy + v1)
-app.use(routes);
+// v1 라우트 마운트
+app.use('/api/v1', routes);
 
 // 글로벌 에러 핸들러: next(err)로 전달된 모든 오류를 여기서 응답으로 변환한다.
 app.use(globalErrorHandler);
