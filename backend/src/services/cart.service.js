@@ -9,15 +9,19 @@ const pool = require('../db/pool');
 const { AppError } = require('../utils/errors');
 
 const isPosInt = (v) => Number.isInteger(Number(v)) && Number(v) > 0;
+const isNonNegInt = (v) => Number.isInteger(Number(v)) && Number(v) >= 0;
+const MAX_QTY = 99;
 const withConn = (conn) => conn || pool;
 
+// 장바구니 조회
 async function getCart(userId) {
-  // 조회를 실행하며 트랜잭션은 불필요, 카트 상태 반환.
+  // 조회는 트랜잭션 불필요. 카트가 없으면 빈 구조를 반환한다.
   const cart = await getCartByUser(userId);
   if (!cart) {
-    return { cartId: null, storeId: null, items: [] };
+    return { cartId: null, storeId: null, items: [], summary: emptySummary() };
   }
-  const items = await getCartItemsWithMenu(cart.cartId);
+  const items = await getCartItemsWithMenu(cart.cartId); // 아이템 및 메뉴 정보 조회
+  const summary = await getCartSummary(cart, items); // 요약 정보 계산
   return {
     cartId: cart.cartId,
     storeId: cart.storeId,
@@ -28,15 +32,17 @@ async function getCart(userId) {
       price: r.price,
       amount: r.amount,
       image: r.imageUrl,
+      menuStatus: r.menuStatus,
       quantity: r.quantity,
       storeId: r.storeId,
     })),
+    summary,
   };
 }
 
 // 공통 트랜잭션 실행 헬퍼
 async function withTransaction(fn) {
-  // 공통 트랜잭션 헬퍼: Service 내부에서 사용. commit/rollback 책임은 함수가 가진다.
+  // 트랜잭션 경계는 서비스에서 명시한다. 실패 시 롤백하여 무결성을 보장한다.
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
@@ -51,18 +57,21 @@ async function withTransaction(fn) {
   }
 }
 
+// 장바구니에 아이템 추가
 async function addItem({ userId, storeId, storeMenuId, quantity }) {
-  // 비즈니스 규칙: 숫자 검증 -> 메뉴 존재/매장 일치 확인 -> CART 생성/확인 -> store 컨텍스트 충돌 검증(DIFFERENT_STORE 409) -> upsert
-  if (!isPosInt(storeId) || !isPosInt(storeMenuId) || !isPosInt(quantity)) {
-    throw new AppError(400, 'BAD_REQUEST', '숫자 값이 필요합니다.');
+  // 입력 검증: 음수/0/상한 초과 방지, 명세상 INVALID_INPUT으로 매핑
+  if (!isPosInt(storeId) || !isPosInt(storeMenuId) || !isPosInt(quantity) || Number(quantity) > MAX_QTY) {
+    throw new AppError(400, 'INVALID_INPUT', '수량/아이디 값이 올바르지 않습니다.');
   }
 
   return withTransaction(async (conn) => {
+    // 메뉴 존재/매장 일치 검증: 타 매장 메뉴면 BAD_REQUEST
     const menu = await findMenuById(storeMenuId, conn);
     if (!menu || Number(menu.storeId) !== Number(storeId)) {
       throw new AppError(400, 'BAD_REQUEST', '해당 매장의 메뉴가 아닙니다.');
     }
 
+    // cartId는 항상 userId 기반으로 확정하여 권한을 보장한다.
     let cart = await getCartByUser(userId, conn);
     let cartId;
     if (!cart) {
@@ -70,6 +79,7 @@ async function addItem({ userId, storeId, storeMenuId, quantity }) {
     } else {
       cartId = cart.cartId;
       if (Number(cart.storeId) !== Number(storeId)) {
+        // 다른 매장 정책: 아이템이 있으면 409 DIFFERENT_STORE
         const itemCount = await countCartItems(cartId, conn);
         if (itemCount > 0) {
           throw new AppError(409, 'DIFFERENT_STORE', '다른 매장 장바구니가 존재합니다. 초기화 후 다시 담아주세요.', {
@@ -82,15 +92,16 @@ async function addItem({ userId, storeId, storeMenuId, quantity }) {
       }
     }
 
+    // upsert는 최종 quantity로 덮어쓴다(원자적 set).
     await upsertCartItem(cartId, storeMenuId, quantity, conn);
     return { cartId, storeId: Number(storeId) };
   });
 }
 
 async function forceAddItem({ userId, storeId, storeMenuId, quantity }) {
-  // 비즈니스 규칙: 다른 매장 아이템 강제 담기. 기존 cart_items 삭제 후 storeId 전환, 이후 upsert.
-  if (!isPosInt(storeId) || !isPosInt(storeMenuId) || !isPosInt(quantity)) {
-    throw new AppError(400, 'BAD_REQUEST', '숫자 값이 필요합니다.');
+  // 입력 검증: 음수/0/상한 초과 방지, 명세상 INVALID_INPUT으로 매핑
+  if (!isPosInt(storeId) || !isPosInt(storeMenuId) || !isPosInt(quantity) || Number(quantity) > MAX_QTY) {
+    throw new AppError(400, 'INVALID_INPUT', '수량/아이디 값이 올바르지 않습니다.');
   }
 
   return withTransaction(async (conn) => {
@@ -117,24 +128,36 @@ async function forceAddItem({ userId, storeId, storeMenuId, quantity }) {
 }
 
 async function updateItemQuantity({ userId, storeMenuId, quantity }) {
-  // 비즈니스 규칙: CART 존재해야 하며, 없는 메뉴는 404. 수량은 양의 정수.
-  if (!isPosInt(storeMenuId) || !isPosInt(quantity)) {
-    throw new AppError(400, 'BAD_REQUEST', '숫자 값이 필요합니다.');
+  // 입력 검증: 0은 삭제로 허용, 음수/상한 초과는 INVALID_INPUT
+  if (!isPosInt(storeMenuId) || !isNonNegInt(quantity) || Number(quantity) > MAX_QTY) {
+    throw new AppError(400, 'INVALID_INPUT', '수량/아이디 값이 올바르지 않습니다.');
   }
   return withTransaction(async (conn) => {
     const cart = await getCartByUser(userId, conn);
     if (!cart) {
       throw new AppError(404, 'NOT_FOUND', '장바구니가 존재하지 않습니다.');
     }
-    await setCartItemQuantity(cart.cartId, storeMenuId, quantity, conn);
+    if (Number(quantity) === 0) {
+      // 0이면 삭제 처리, 존재하지 않으면 404로 매핑
+      const deleted = await deleteCartItem(cart.cartId, storeMenuId, conn);
+      if (!deleted) {
+        throw new AppError(404, 'NOT_FOUND', '해당 메뉴가 장바구니에 없습니다.');
+      }
+    } else {
+      // 수량은 최종 값으로 set, row 미존재면 404
+      const affected = await setCartItemQuantity(cart.cartId, storeMenuId, quantity, conn);
+      if (!affected) {
+        throw new AppError(404, 'NOT_FOUND', '해당 메뉴가 장바구니에 없습니다.');
+      }
+    }
     return { cartId: cart.cartId, storeId: cart.storeId };
   });
 }
 
 async function removeItem({ userId, storeMenuId }) {
-  // 비즈니스 규칙: CART 존재 + 개별 메뉴 존재 여부 확인. 존재하지 않으면 404.
+  // 입력 검증: INVALID_INPUT으로 매핑
   if (!isPosInt(storeMenuId)) {
-    throw new AppError(400, 'BAD_REQUEST', '숫자 값이 필요합니다.');
+    throw new AppError(400, 'INVALID_INPUT', '숫자 값이 필요합니다.');
   }
   return withTransaction(async (conn) => {
     const cart = await getCartByUser(userId, conn);
@@ -149,6 +172,27 @@ async function removeItem({ userId, storeMenuId }) {
   });
 }
 
+async function removeItemsBulk({ userId, storeMenuIds }) {
+  // 입력 검증: 배열 유효성 및 숫자 검증
+  if (!Array.isArray(storeMenuIds) || storeMenuIds.length === 0) {
+    throw new AppError(400, 'INVALID_INPUT', '삭제할 메뉴 목록이 필요합니다.');
+  }
+  const normalized = storeMenuIds.map((v) => Number(v)).filter((v) => Number.isInteger(v) && v > 0);
+  if (normalized.length !== storeMenuIds.length) {
+    throw new AppError(400, 'INVALID_INPUT', '삭제할 메뉴 목록이 올바르지 않습니다.');
+  }
+
+  return withTransaction(async (conn) => {
+    const cart = await getCartByUser(userId, conn);
+    if (!cart) {
+      throw new AppError(404, 'NOT_FOUND', '장바구니가 존재하지 않습니다.');
+    }
+    // 다건 삭제는 트랜잭션으로 원자 처리
+    const affected = await deleteCartItemsBulk(cart.cartId, normalized, conn);
+    return { cartId: cart.cartId, removed: affected };
+  });
+}
+
 async function clearCart(userId) {
   // CART가 없으면 cleared=false, 있으면 cart_items 삭제
   return withTransaction(async (conn) => {
@@ -160,6 +204,68 @@ async function clearCart(userId) {
     return { cleared: true };
   });
 }
+
+async function validateCart({ userId, priceMap }) {
+  // 판매상태/가격 재검증: 위변조/품절/숨김은 409로 차단한다.
+  const cart = await getCartByUser(userId);
+  if (!cart) {
+    return { valid: true, cartId: null, items: [], summary: emptySummary() };
+  }
+
+  const items = await getCartItemsWithMenu(cart.cartId);
+  const summary = await getCartSummary(cart, items);
+
+  const invalidItems = [];
+  for (const item of items) {
+    if (item.menuStatus === 'SOLD_OUT') {
+      invalidItems.push({
+        storeMenuId: String(item.storeMenuId),
+        reason: 'SOLD_OUT_ITEM',
+        currentPrice: item.price,
+        menuStatus: item.menuStatus,
+      });
+    }
+    if (item.menuStatus === 'HIDDEN') {
+      invalidItems.push({
+        storeMenuId: String(item.storeMenuId),
+        reason: 'MENU_HIDDEN',
+        currentPrice: item.price,
+        menuStatus: item.menuStatus,
+      });
+    }
+    // 클라이언트가 priceMap을 전달하면 가격 위변조/변경 감지
+    if (priceMap && priceMap[item.storeMenuId] != null) {
+      const clientPrice = Number(priceMap[item.storeMenuId]);
+      if (Number.isFinite(clientPrice) && Number(clientPrice) !== Number(item.price)) {
+        invalidItems.push({
+          storeMenuId: String(item.storeMenuId),
+          reason: 'PRICE_CHANGED',
+          currentPrice: item.price,
+          menuStatus: item.menuStatus,
+        });
+      }
+    }
+  }
+
+  if (invalidItems.length > 0) {
+    // 대표 코드 선택: SOLD_OUT 우선, 다음 HIDDEN, 다음 PRICE_CHANGED
+    const hasSoldOut = invalidItems.some((it) => it.reason === 'SOLD_OUT_ITEM');
+    const hasHidden = invalidItems.some((it) => it.reason === 'MENU_HIDDEN');
+    const hasPrice = invalidItems.some((it) => it.reason === 'PRICE_CHANGED');
+    const code = hasSoldOut ? 'SOLD_OUT_ITEM' : hasHidden ? 'MENU_HIDDEN' : 'PRICE_CHANGED';
+    const message =
+      code === 'SOLD_OUT_ITEM'
+        ? '품절된 메뉴가 포함되어 있습니다.'
+        : code === 'MENU_HIDDEN'
+          ? '숨김 처리된 메뉴가 포함되어 있습니다.'
+          : '메뉴 가격이 변경되었습니다.';
+    throw new AppError(409, code, message, { items: invalidItems, summary });
+  }
+
+  return { valid: true, cartId: cart.cartId, items: normalizeCartItems(items), summary };
+}
+
+//=====================SQL Functions================================================
 
 async function findMenuById(storeMenuId, conn) {
   const executor = withConn(conn);
@@ -202,7 +308,8 @@ async function getCartItemsWithMenu(cartId, conn) {
         sm.imageUrl AS imageUrl,
         sm.description AS description,
         sm.amount AS amount,
-        sm.storeId AS storeId
+        sm.storeId AS storeId,
+        sm.menuStatus AS menuStatus
      FROM cart_items ci
      JOIN storemenus sm ON sm.storeMenuId = ci.storeMenuId
      WHERE ci.cartId = ?`,
@@ -213,6 +320,7 @@ async function getCartItemsWithMenu(cartId, conn) {
 
 async function upsertCartItem(cartId, storeMenuId, quantity, conn) {
   const executor = withConn(conn);
+  // 명세 요구: 서버는 최종 quantity로 set
   await executor.query(
     `INSERT INTO cart_items (cartId, storeMenuId, quantity)
      VALUES (?, ?, ?)
@@ -223,10 +331,11 @@ async function upsertCartItem(cartId, storeMenuId, quantity, conn) {
 
 async function setCartItemQuantity(cartId, storeMenuId, quantity, conn) {
   const executor = withConn(conn);
-  await executor.query(
+  const [result] = await executor.query(
     `UPDATE cart_items SET quantity = ? WHERE cartId = ? AND storeMenuId = ?`,
     [quantity, cartId, storeMenuId],
   );
+  return result.affectedRows;
 }
 
 async function deleteCartItem(cartId, storeMenuId, conn) {
@@ -238,9 +347,64 @@ async function deleteCartItem(cartId, storeMenuId, conn) {
   return result.affectedRows;
 }
 
+async function deleteCartItemsBulk(cartId, storeMenuIds, conn) {
+  const executor = withConn(conn);
+  const placeholders = storeMenuIds.map(() => '?').join(',');
+  const [result] = await executor.query(
+    `DELETE FROM cart_items WHERE cartId = ? AND storeMenuId IN (${placeholders})`,
+    [cartId, ...storeMenuIds],
+  );
+  return result.affectedRows;
+}
+
 async function clearCartItems(cartId, conn) {
   const executor = withConn(conn);
   await executor.query('DELETE FROM cart_items WHERE cartId = ?', [cartId]);
+}
+
+async function getStoreById(storeId, conn) {
+  const executor = withConn(conn);
+  const [rows] = await executor.query(
+    'SELECT storeId, storeName, minOrderAmount, baseDeliveryFee, isActive FROM stores WHERE storeId = ? LIMIT 1',
+    [storeId],
+  );
+  return rows[0] || null;
+}
+
+function emptySummary() {
+  return {
+    storeId: null,
+    storeName: null,
+    minOrderAmount: 0,
+    baseDeliveryFee: 0,
+    totalPrice: 0,
+  };
+}
+
+function normalizeCartItems(items) {
+  return items.map((r) => ({
+    storeMenuId: String(r.storeMenuId),
+    name: r.name,
+    description: r.description,
+    price: r.price,
+    amount: r.amount,
+    image: r.imageUrl,
+    menuStatus: r.menuStatus,
+    quantity: r.quantity,
+    storeId: r.storeId,
+  }));
+}
+
+async function getCartSummary(cart, items, conn) {
+  const store = await getStoreById(cart.storeId, conn);
+  const totalPrice = items.reduce((sum, it) => sum + Number(it.price || 0) * Number(it.quantity || 0), 0);
+  return {
+    storeId: cart.storeId,
+    storeName: store?.storeName || null,
+    minOrderAmount: Number(store?.minOrderAmount || 0),
+    baseDeliveryFee: Number(store?.baseDeliveryFee || 0),
+    totalPrice,
+  };
 }
 
 module.exports = {
@@ -249,5 +413,7 @@ module.exports = {
   forceAddItem,
   updateItemQuantity,
   removeItem,
+  removeItemsBulk,
   clearCart,
+  validateCart,
 };

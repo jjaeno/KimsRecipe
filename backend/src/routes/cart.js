@@ -5,14 +5,14 @@ const { auth } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Frontend endpoint examples (base: /api/v1):
 // GET    /api/v1/cart
-// POST   /api/v1/cart/items
-// POST   /api/v1/cart/items/force
 // PATCH  /api/v1/cart/items/:storeMenuId
 // DELETE /api/v1/cart/items/:storeMenuId
+// DELETE /api/v1/cart/items (bulk)
 // DELETE /api/v1/cart
+// GET    /api/v1/cart/validate
 
+// 장바구니 조회
 async function getCart(req, res, next) {
   try {
     const result = await cartService.getCart(req.user.id);
@@ -22,6 +22,7 @@ async function getCart(req, res, next) {
   }
 }
 
+// 장바구니 항목 추가
 async function addItem(req, res, next) {
   try {
     const { storeId, storeMenuId, quantity } = req.body;
@@ -32,20 +33,12 @@ async function addItem(req, res, next) {
   }
 }
 
-async function forceAddItem(req, res, next) {
-  try {
-    const { storeId, storeMenuId, quantity } = req.body;
-    const result = await cartService.forceAddItem({ userId: req.user.id, storeId, storeMenuId, quantity });
-    return success(res, result, '기존 장바구니를 비우고 새 매장으로 담았습니다.', 'OK', 200);
-  } catch (err) {
-    return next(err);
-  }
-}
-
+// 장바구니 항목 수량 변경
 async function updateItem(req, res, next) {
   try {
     const { storeMenuId } = req.params;
     const { quantity } = req.body;
+    // 상세 검증/무결성은 서비스에서 수행한다.
     const result = await cartService.updateItemQuantity({ userId: req.user.id, storeMenuId, quantity });
     return success(res, result, '장바구니 수량을 변경했습니다.');
   } catch (err) {
@@ -53,6 +46,7 @@ async function updateItem(req, res, next) {
   }
 }
 
+// 장바구니 항목 삭제
 async function removeItem(req, res, next) {
   try {
     const { storeMenuId } = req.params;
@@ -63,6 +57,19 @@ async function removeItem(req, res, next) {
   }
 }
 
+// 장바구니 항목 다건 삭제
+async function removeItemsBulk(req, res, next) {
+  try {
+    const { storeMenuIds } = req.body;
+    // 다건 삭제는 반드시 트랜잭션으로 처리한다.
+    const result = await cartService.removeItemsBulk({ userId: req.user.id, storeMenuIds });
+    return success(res, result, '선택한 항목을 삭제했습니다.');
+  } catch (err) {
+    return next(err);
+  }
+}
+
+// 장바구니 비우기
 async function clearCart(req, res, next) {
   try {
     const result = await cartService.clearCart(req.user.id);
@@ -72,13 +79,25 @@ async function clearCart(req, res, next) {
   }
 }
 
+// 장바구니 검증
+async function validateCart(req, res, next) {
+  try {
+    // priceMap은 GET 쿼리로 전달된다. 예: ?priceMap={"12":4500}
+    const raw = req.query.priceMap;
+    const priceMap = raw ? JSON.parse(raw) : null;
+    const result = await cartService.validateCart({ userId: req.user.id, priceMap });
+    return success(res, result, '장바구니 검증 성공');
+  } catch (err) {
+    return next(err);
+  }
+}
+
 router.get('/', auth, getCart);
 router.post('/items', auth, addItem);
-router.post('/items/force', auth, forceAddItem);
+router.get('/validate', auth, validateCart);
 router.patch('/items/:storeMenuId', auth, updateItem);
 router.delete('/items/:storeMenuId', auth, removeItem);
+router.delete('/items', auth, removeItemsBulk);
 router.delete('/', auth, clearCart);
 
 module.exports = router;
-
-
