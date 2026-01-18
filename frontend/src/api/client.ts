@@ -1,8 +1,14 @@
-// Responsibility: Axios 클라이언트 설정 및 공통 동작 정의. baseURL과 타임아웃을 설정하고, 요청/응답 시 공통 처리 로직을 추가합니다.
+// Responsibility: Axios 클라이언트 설정 및 공통 동작 정의.
 
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_DEVICE } from '@env';
+
+export type ApiError = Error & {
+  status?: number;
+  code?: string;
+  data?: any;
+};
 
 export const client = axios.create({
   baseURL: API_DEVICE,
@@ -11,7 +17,6 @@ export const client = axios.create({
 
 console.log('[api] baseURL:', API_DEVICE);
 
-// 요청 인터셉터: AsyncStorage에 저장된 토큰을 Authorization 헤더에 추가
 client.interceptors.request.use(async (config) => {
   try {
     const token = await AsyncStorage.getItem('token');
@@ -19,13 +24,12 @@ client.interceptors.request.use(async (config) => {
       config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
-  } catch (err) {
-    // 저장소 접근 실패 시 조용히 넘어감 (별도 알림 없음)
+  } catch {
+    // storage 접근 실패는 조용히 무시
   }
   return config;
 });
 
-// 응답 인터셉터: 오류 발생 시 메시지 가공 후 throw
 client.interceptors.response.use(
   (res) => res,
   async (error) => {
@@ -33,10 +37,17 @@ client.interceptors.response.use(
       await AsyncStorage.removeItem('token');
     }
 
+    const payload = error?.response?.data;
     const message =
-      error?.response?.data?.message ||
+      payload?.message ||
       error?.message ||
-      '네트워크 요청 중 알 수 없는 오류가 발생했습니다.';
-    return Promise.reject(new Error(message));
+      '네트워크 요청 중 오류가 발생했습니다.';
+
+    const apiError = new Error(message) as ApiError;
+    apiError.status = error?.response?.status;
+    apiError.code = payload?.code;
+    apiError.data = payload?.data;
+
+    return Promise.reject(apiError);
   },
 );

@@ -1,10 +1,12 @@
 import React from 'react';
+import {TouchableOpacity, View, Text} from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import DetailScreen from '../screens/product/DetailScreen';
 import CartScreen from '../screens/cart/CartScreen';
 import TabNavigator from './TabNavigator';
 import LoginScreen from '../screens/auth/LoginScreen';
 import SignupScreen from '../screens/auth/SignupScreen';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 export type RootStackParamList = {
   Start: undefined;
@@ -32,7 +34,20 @@ export default function StackNavigator() {
       <Stack.Screen name="Signup" component={SignupScreen} options={{ title: '회원가입' }} />
       <Stack.Screen name="Tab" component={TabNavigator} options={{headerShown:false}}/>
       <Stack.Screen name="Detail" component={DetailScreen} options={{headerShown: false}}/>
-      <Stack.Screen name="Cart" component={CartScreen} />
+      <Stack.Screen
+        name="Cart"
+        component={CartScreen}
+        options={({ navigation }) => ({
+          title: '장바구니',
+          headerTitleAlign: 'center',
+          headerTitleStyle: {fontSize: 18, fontWeight: '600'},
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Icon name="arrow-back-ios" size={20} color="#ffffff" />
+            </TouchableOpacity>
+          ),
+        })}
+      />
     </Stack.Navigator>
   );
 };

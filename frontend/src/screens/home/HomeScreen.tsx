@@ -207,7 +207,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                 >
                   <Image source={{ uri: item?.image }} style={styles.gridImage} resizeMode="cover" />
                   <Text style={styles.gridName} numberOfLines={2}>
-                    {item?.name}
+                    {item?.name} ({item?.amount})
                   </Text>
                   <Text style={styles.gridPrice}>{item?.price.toLocaleString()}원</Text>
                 </TouchableOpacity>
@@ -228,7 +228,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                   onPress={() => navigation.navigate('Detail', { foodId: item.id })}
                 >
                   <View>
-                    <Text style={styles.listName}>{item.name}</Text>
+                    <Text style={styles.listName}>{item.name} ({item.amount})</Text>
                     <Text style={styles.listPrice}>{item.price.toLocaleString()}원</Text>
                   </View>
                   <Image source={{ uri: item.image }} style={styles.listImage} />

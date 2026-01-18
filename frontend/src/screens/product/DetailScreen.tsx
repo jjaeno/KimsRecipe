@@ -31,11 +31,13 @@ const DetailScreen: React.FC<Props> = ({ navigation, route }) => {
       price: Number(item.price),
       image: item.image,
       amount: item.amount ?? '',
+      menuStatus: 'ON_SALE',
       quantity,
       storeId: String(selectedStoreId),
     });
     if (ok) {
       Alert.alert('담기 완료', '장바구니에 담았습니다.');
+      navigation.goBack();
     } else {
       Alert.alert('담기 실패', '알 수 없는 오류;')
     }
