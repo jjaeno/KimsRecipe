@@ -20,6 +20,7 @@ export type CartSummary = {
   minOrderAmount: number;
   baseDeliveryFee: number;
   totalPrice: number;
+  userPoints?: number;
 };
 
 // CartResponse: 장바구니 전체 정보

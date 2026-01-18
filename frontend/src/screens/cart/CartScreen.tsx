@@ -393,7 +393,7 @@ export default function CartScreen() {
                 disabled={isSoldOut || !isOnline}
                 onPress={() => changeQuantity(cartItem, -1)}
               >
-                <Text style={s.qtyBtnText}>-</Text>
+                <Text style={s.qtyMinusText}>-</Text>
               </TouchableOpacity>
 
               <Text style={s.qtyText}>{cartItem.quantity}</Text>
@@ -403,7 +403,7 @@ export default function CartScreen() {
                 disabled={isSoldOut || !isOnline}
                 onPress={() => changeQuantity(cartItem, 1)}
               >
-                <Text style={s.qtyBtnText}>+</Text>
+                <Text style={s.qtyPlusText}>+</Text>
               </TouchableOpacity>
 
               {isSoldOut ? <Text style={s.badge}>품절</Text> : null}
@@ -581,7 +581,8 @@ const s = StyleSheet.create({
   // 수량 조절 영역
   qtyRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 },
   qtyBtn: { width: 28, height: 28, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
-  qtyBtnText: { fontSize: 16, fontWeight: '700' },
+  qtyMinusText: { fontSize: 20, fontWeight: '700' },
+  qtyPlusText: { fontSize: 16, fontWeight: '700' },
   qtyText: { minWidth: 24, textAlign: 'center' },
   badge: { marginLeft: 8, color: '#ef4444', fontWeight: '700' },
 

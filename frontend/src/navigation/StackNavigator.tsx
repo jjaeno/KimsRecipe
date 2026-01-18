@@ -6,6 +6,7 @@ import CartScreen from '../screens/cart/CartScreen';
 import TabNavigator from './TabNavigator';
 import LoginScreen from '../screens/auth/LoginScreen';
 import SignupScreen from '../screens/auth/SignupScreen';
+import CheckoutScreen from '../screens/orders/CheckoutScreen';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 export type RootStackParamList = {
@@ -15,6 +16,7 @@ export type RootStackParamList = {
   Cart: undefined;
   Login: undefined;
   Signup: undefined;
+  Checkout: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -48,6 +50,7 @@ export default function StackNavigator() {
           ),
         })}
       />
+      <Stack.Screen name="Checkout" component={CheckoutScreen} options={{headerShown: false}}/>
     </Stack.Navigator>
   );
 };

@@ -6,6 +6,7 @@ const menuRoutes = require('./menus');
 const cartRoutes = require('./cart');
 const orderRoutes = require('./orders');
 const homePartyRoutes = require('./homeParty');
+const checkoutRoutes = require('./checkout');
 
 const router = express.Router();
 
@@ -22,5 +23,6 @@ router.use('/menus', menuRoutes);
 router.use('/cart', cartRoutes);
 router.use('/orders', orderRoutes);
 router.use('/home-party', homePartyRoutes);
+router.use('/', checkoutRoutes);
 
 module.exports = router;
