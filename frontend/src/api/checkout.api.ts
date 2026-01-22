@@ -16,6 +16,20 @@ export async function getAddresses() {
   const res = await client.get<ApiResponse<{ addresses: Address[] }>>('/v1/addresses');
   if (!res.data?.success) throw new Error(res.data?.message || '배송지 조회 실패');
   return res.data.data;
+
+  // ui 개발용 임시 데이터
+  // return {
+  //   addresses: [
+  //     {
+  //       addressId: 1,
+  //       recipientName: '테스트',
+  //       phone: '010-1234-5678',
+  //       addressLine1: '서울시 강남구 테헤란로 123',
+  //       addressLine2: '101동 202호',
+  //       isDefault: 1,
+  //     },
+  //   ]
+  // }
 }
 
 // 주문 생성

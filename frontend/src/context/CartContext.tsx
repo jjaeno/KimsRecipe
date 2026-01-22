@@ -17,7 +17,7 @@ type CartContextType = {
   removeFromCart: (storeMenuId: string) => Promise<void>;
   removeSelected: (storeMenuIds: string[]) => Promise<void>;
   clearCart: () => Promise<void>;
-  validateBeforeCheckout: (priceMap: Record<string, number>) => Promise<any>;
+  validateBeforeCheckout: (priceMap: Record<string, number>, selectedIds?: string[]) => Promise<any>;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -40,6 +40,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       const data: CartResponse = await getCart(); // 서버에서 카트 조회
       setCartItems(data.items ?? []); // 서버 데이터 반영
       setSummary(data.summary); // 서버 요약 반영
+      // 임시 데이터 설정 (UI 개발용)
+      // setSummary({
+      //   storeId: 1,
+      //   storeName: '테스트',
+      //   minOrderAmount: 15000,
+      //   baseDeliveryFee: 2000,
+      //   totalPrice: 29800,
+      //   userPoints: 5000,
+      // });
       await AsyncStorage.setItem(CART_CACHE_KEY, JSON.stringify(data)); // 오프라인 캐시 저장
 
     } catch (err: any) {
@@ -107,8 +116,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const validateBeforeCheckout = async (priceMap: Record<string, number>) => {
-    const result = await validateCart(priceMap); // 서버 검증 호출
+  const validateBeforeCheckout = async (priceMap: Record<string, number>, selectedIds?: string[]) => {
+    console.log('클라이언트에서 서버로 요청하는 맵', priceMap);
+    const result = await validateCart(priceMap, selectedIds); // 서버 검증 호출
+    console.log('서버에서 클라이언트로 반환된 결과', result);
     return result; // 결과 반환
   };
 

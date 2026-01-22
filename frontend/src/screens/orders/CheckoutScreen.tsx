@@ -12,7 +12,7 @@ import {
   Switch,
 } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useCart } from '../../context/CartContext';
 import {
@@ -22,6 +22,7 @@ import {
   confirmPayment,
   Address,
 } from '../../api/checkout.api';
+import { moderateScale } from 'react-native-size-matters';
 
 const POINT_RATE = 0.01;
 const POINT_MIN = 3000;
@@ -36,11 +37,20 @@ type OrderSnapshot = {
 };
 
 export default function CheckoutScreen() {
-  const navigation = useNavigation<any>(); // 네비게이션 객체
+  const navigation = useNavigation<any>(); // ???????????????????
+  const route = useRoute<any>();
+  const selectedIds = route?.params?.selectedIds as string[] | undefined;
   const { cartItems, summary, loadCartFromServer } = useCart(); // 장바구니/요약
+
+  const selectedCartItems = useMemo(() => {
+    if (!selectedIds || selectedIds.length === 0) return cartItems;
+    const idSet = new Set(selectedIds);
+    return cartItems.filter((it) => idSet.has(it.storeMenuId));
+  }, [cartItems, selectedIds]);
 
   const [addresses, setAddresses] = useState<Address[]>([]); // 배송지 목록
   const [deliveryRequest, setDeliveryRequest] = useState(''); // 요청사항
+  const [isRequestFocused, setIsRequestFocused] = useState(false);
   const [payMethod, setPayMethod] = useState<'CARD' | 'KAKAO' | 'TOSS' | 'OTHER'>('CARD'); // 결제수단
   const [usePoints, setUsePoints] = useState(false); // 포인트 사용 여부
   const [rawPoints, setRawPoints] = useState(''); // 입력 원본
@@ -97,8 +107,8 @@ export default function CheckoutScreen() {
 
   const subtotal = useMemo(() => {
     // 상품 금액 합계
-    return cartItems.reduce((sum, it) => sum + Number(it.price) * Number(it.quantity), 0);
-  }, [cartItems]);
+    return selectedCartItems.reduce((sum, it) => sum + Number(it.price) * Number(it.quantity), 0);
+  }, [selectedCartItems]);
 
   const deliveryFee = useMemo(() => {
     // 배송비(서버 요약값)
@@ -147,8 +157,8 @@ export default function CheckoutScreen() {
 
   const isPayDisabled = useMemo(() => {
     // 결제 불가 조건
-    return !isOnline || !defaultAddress || cartItems.length === 0 || !isMinOrderMet || loading;
-  }, [isOnline, defaultAddress, cartItems.length, isMinOrderMet, loading]);
+    return !isOnline || !defaultAddress || selectedCartItems.length === 0 || !isMinOrderMet || loading;
+  }, [isOnline, defaultAddress, selectedCartItems.length, isMinOrderMet, loading]);
 
   const handleTogglePoints = () => {
     // 오프라인 차단
@@ -283,14 +293,6 @@ export default function CheckoutScreen() {
   return (
     <SafeAreaView style={s.safe}>
       <View style={s.screen}>
-        <View style={s.appBar}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={s.appBarIcon}>
-            <Icon name="arrow-back-ios" size={22} color="#fff" />
-          </TouchableOpacity>
-          <Text style={s.appBarTitle}>주문/결제</Text>
-          <View style={s.appBarIcon} />
-        </View>
-
         <ScrollView contentContainerStyle={s.scrollContent}>
           {/* 배송 정보 + 요청사항 (같은 카드) */}
           <Text style={s.sectionTitle}>배송 정보</Text>
@@ -310,7 +312,7 @@ export default function CheckoutScreen() {
                 )}
               </View>
               <TouchableOpacity onPress={handleAddressManage} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                <Icon name="settings" size={20} color="#8A8F98" />
+                <Icon name="settings" size={20} color="#009798" />
               </TouchableOpacity>
             </View>
 
@@ -319,12 +321,16 @@ export default function CheckoutScreen() {
             <Text style={s.sectionTitleInner}>요청사항</Text>
             <TextInput
               style={s.requestInput}
-              placeholder="문앞에 놔주세요."
+              placeholder={isRequestFocused ? '' : '요청사항을 입력해주세요.'}
               placeholderTextColor="#B0B5BC"
               multiline
               value={deliveryRequest}
               onChangeText={setDeliveryRequest}
-              onBlur={handleRequestBlur}
+              onFocus={() => setIsRequestFocused(true)}
+              onBlur={() => {
+                setIsRequestFocused(false);
+                handleRequestBlur();
+              }}
               editable={isOnline}
               underlineColorAndroid="transparent"
             />
@@ -341,8 +347,9 @@ export default function CheckoutScreen() {
                     {checked ? <View style={s.radioDot} /> : null}
                   </View>
                   <View style={s.brandLabelWrap}>
-                    {m === 'KAKAO' ? <View style={s.kakaoPill}><Text style={s.kakaoText}>pay</Text></View> : null}
-                    {m === 'TOSS' ? <View style={s.tossDot} /> : null}
+                    {/* 추후에 실제 결제 연동 시 구현 예정 */}
+                    {/* {m === 'KAKAO' ? <View style={s.kakaoPill}><Text style={s.kakaoText}>pay</Text></View> : null}
+                    {m === 'TOSS' ? <View style={s.tossDot} /> : null} */}
                     <Text style={s.bodyText}>
                       {m === 'CARD'
                         ? '신용/체크카드'
@@ -361,15 +368,15 @@ export default function CheckoutScreen() {
           {/* 회원정보 */}
           <Text style={s.sectionTitle}>회원정보</Text>
           <View style={s.card}>
-            <View style={s.rowBetween}>
+            <View style={s.rowBetweenMember}>
               <Text style={s.labelText}>회원 번호</Text>
               <Text style={s.valueText}>김재노(7239)</Text>
             </View>
-            <View style={s.rowBetween}>
+            <View style={s.rowBetweenMember}>
               <Text style={s.labelText}>보유 포인트</Text>
               <Text style={s.pointText}>{userPoints.toLocaleString()}p</Text>
             </View>
-            <View style={s.rowBetween}>
+            <View style={s.rowBetweenMember}>
               <Text style={s.labelText}>포인트 사용</Text>
               <Switch
                 value={usePoints}
@@ -383,7 +390,7 @@ export default function CheckoutScreen() {
               <View style={s.pointInputRow}>
                 <TextInput
                   style={s.pointInput}
-                  placeholder="300p"
+                  placeholder="0p"
                   placeholderTextColor="#B0B5BC"
                   editable={isOnline}
                   value={rawPoints}
@@ -391,8 +398,10 @@ export default function CheckoutScreen() {
                   onChangeText={(t) => setRawPoints(t.replace(/[^0-9]/g, ''))}
                   onBlur={handlePointsBlur}
                 />
-                <Text style={s.pointSuffix}>p</Text>
               </View>
+            ) : null}
+            {usePoints && parsedPoints > 0 && parsedPoints < POINT_MIN ? (
+              <Text style={s.pointWarnText}>3000p 이상부터 사용 가능합니다.</Text>
             ) : null}
             <View style={s.rowBetween}>
               <Text style={s.labelText}>적립 예정 포인트</Text>
@@ -405,10 +414,12 @@ export default function CheckoutScreen() {
           <View style={s.card}>
             <View style={s.rowBetween}><Text style={s.labelText}>상품 금액</Text><Text style={s.valueText}>{subtotal.toLocaleString()}원</Text></View>
             <View style={s.rowBetween}><Text style={s.labelText}>배송비</Text><Text style={s.valueText}>{deliveryFee.toLocaleString()}원</Text></View>
+            {usePoints && validPoints > 0 ? (
             <View style={s.rowBetween}><Text style={s.redText}>포인트 사용</Text><Text style={s.redText}>-{validPoints.toLocaleString()}원</Text></View>
+            ) : null}
             <View style={s.divider} />
             <View style={s.rowBetween}><Text style={s.totalLabel}>최종 결제 금액</Text><Text style={s.totalLabel}>{finalTotal.toLocaleString()}원</Text></View>
-            <Text style={s.expectedPointText}>적립 예정 포인트 +{expectedPoints.toLocaleString()}p</Text>
+            <View style={s.rowBetween}><Text style={s.expectedPointText}>적립 예정 포인트</Text><Text style={s.expectedPointText}> +{expectedPoints.toLocaleString()}p</Text></View>
           </View>
         </ScrollView>
 
@@ -432,29 +443,21 @@ export default function CheckoutScreen() {
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F6F7F8' },
-  screen: { flex: 1, backgroundColor: '#F6F7F8' },
+  safe: { flex: 1, backgroundColor: '#ffffff' },
+  screen: { flex: 1, backgroundColor: '#ffffff' },
 
-  appBar: {
-    height: 56,
-    backgroundColor: '#4F9A9A',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-  },
-  appBarIcon: { width: 24, alignItems: 'center' },
-  appBarTitle: { flex: 1, textAlign: 'center', color: '#fff', fontSize: 17, fontWeight: '600' },
+  scrollContent: { padding: 16, paddingTop: 20, paddingBottom: 30 },
 
-  scrollContent: { padding: 16, paddingBottom: 90 },
+  sectionTitle: { fontSize: 13, fontWeight: '700', color: '#222', marginBottom: 10, paddingLeft: 5 },
 
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: '#222', marginBottom: 6 },
-
-  sectionTitleInner: { fontSize: 13, fontWeight: '700', color: '#222', marginBottom: 6 },
+  sectionTitleInner: { fontSize: 12, fontWeight: '700', color: '#222', marginTop: 5 },
 
   card: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 16,
+    paddingTop: moderateScale(10),
+    paddingHorizontal: moderateScale(16),
+    paddingBottom: moderateScale(10),
     marginBottom: 16,
     shadowColor: '#000',
     shadowOpacity: 0.08,
@@ -464,26 +467,27 @@ const s = StyleSheet.create({
   },
 
   rowBetweenTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  addressBlock: { flex: 1, paddingRight: 12 },
-  nameText: { fontSize: 16, fontWeight: '700', color: '#222' },
-  phoneText: { marginTop: 6, fontSize: 14, fontWeight: '700', color: '#222' },
+  addressBlock: { flex: 1, paddingRight: 12, paddingTop: 4 },
+  nameText: { fontSize: 15, fontWeight: '600', color: '#222', marginBottom: 5 },
+  phoneText: { marginTop: 8, fontSize: 13, fontWeight: '600', color: '#222' },
 
-  bodyText: { fontSize: 14, color: '#222' },
+  bodyText: { fontSize: 14, color: '#222', fontWeight: '400' },
   labelText: { fontSize: 14, color: '#222' },
   valueText: { fontSize: 14, color: '#222', fontWeight: '600' },
-  subText: { fontSize: 12, color: '#8A8F98' },
+  subText: { fontSize: 12, fontWeight: '400', color: '#6a6a6a' },
   pointText: { fontSize: 14, color: '#4F9A9A', fontWeight: '700' },
   redText: { fontSize: 14, color: '#E44' },
-  totalLabel: { fontSize: 16, fontWeight: '700', color: '#222' },
+  totalLabel: { fontSize: 16, fontWeight: '700', color: '#009798' },
 
   requestInput: {
-    minHeight: 52,
-    fontSize: 14,
-    color: '#222',
-    paddingVertical: 8,
+    minHeight: 30,
+    fontSize: 12,
+    fontWeight: '400',
+    color: '#3C3C3C',
+    paddingHorizontal: 0,
   },
 
-  cardDivider: { height: StyleSheet.hairlineWidth, backgroundColor: '#EAEAEA', marginVertical: 12 },
+  cardDivider: {height: StyleSheet.hairlineWidth, backgroundColor: '#e2e2e2', marginVertical: 12, marginHorizontal: moderateScale(-16) },
 
   radioRow: { flexDirection: 'row', alignItems: 'center', height: 48 },
   brandLabelWrap: { flexDirection: 'row', alignItems: 'center' },
@@ -521,8 +525,8 @@ const s = StyleSheet.create({
   },
   kakaoText: { fontSize: 10, fontWeight: '700', color: '#111' },
   tossDot: { width: 18, height: 18, borderRadius: 9, backgroundColor: '#4F7DF5', marginRight: 6 },
-
-  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 6 },
+  rowBetweenMember: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 8 },
+  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 4 },
 
   pointInputRow: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end', marginTop: 4 },
   pointInput: {
@@ -531,15 +535,27 @@ const s = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#D1D5DB',
-    paddingHorizontal: 10,
+    paddingHorizontal: moderateScale(10),
+    marginBottom: moderateScale(4),
     textAlign: 'right',
     fontSize: 14,
     color: '#222',
     backgroundColor: '#fff',
   },
-  pointSuffix: { marginLeft: 6, color: '#8A8F98', fontSize: 12 },
+  pointWarnText: {
+    textAlign: 'right',
+    marginTop: 6,
+    fontSize: 11,
+    color: '#E44',
+  },
 
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: '#EAEAEA', marginVertical: 8 },
+
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#959595',
+    marginVertical: 8,
+    marginHorizontal: moderateScale(-16),
+  },
   expectedPointText: { fontSize: 12, color: '#8A8F98', textAlign: 'right' },
 
   bottomBar: {
@@ -554,7 +570,7 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
   },
   bottomLabel: { fontSize: 11, color: '#8A8F98' },
-  bottomValue: { fontSize: 12, color: '#222', marginTop: 2 },
+  bottomValue: { fontSize: 12, color: '#8A8F98', marginTop: 2 },
 
   payBtn: {
     minWidth: 180,

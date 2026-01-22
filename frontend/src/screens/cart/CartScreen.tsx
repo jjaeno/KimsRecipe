@@ -92,10 +92,17 @@ export default function CartScreen() {
   /**
    * 총 금액 (서버 summary 기반)
    */
-  const totalPrice = useMemo(
-    () => uiItems.reduce((sum, it) => sum + Number(it.price) * Number(it.quantity), 0),
-    [uiItems]
+
+  const selectedItems = useMemo(
+    () => uiItems.filter((it) => selectedIds.has(it.storeMenuId)),
+    [uiItems, selectedIds]
   );
+
+  const selectedTotalPrice = useMemo(
+    () => selectedItems.reduce((sum, it) => sum + Number(it.price) * Number(it.quantity), 0),
+    [selectedItems]
+  );
+
 
 
   /**
@@ -103,22 +110,22 @@ export default function CartScreen() {
    * - 주문 버튼 비활성화 조건에 사용
    */
   const hasBlockedItems = useMemo(() => {
-    return uiItems.some((it) => it.menuStatus === 'SOLD_OUT' || it.menuStatus === 'HIDDEN');
+    return selectedItems.some((it) => it.menuStatus === 'SOLD_OUT' || it.menuStatus === 'HIDDEN');
   }, [uiItems]);
 
   /**
    * 최소 주문 금액 충족 여부
    */
   const isMinOrderMet = useMemo(() => {
-    return totalPrice >= (summary.minOrderAmount || 0);
-  }, [totalPrice, summary.minOrderAmount]);
+    return selectedTotalPrice >= (summary.minOrderAmount || 0);
+  }, [selectedTotalPrice, summary.minOrderAmount]);
 
   /**
    * 주문 버튼 비활성 조건
    */
   const isOrderDisabled = useMemo(() => {
-    return !isOnline || uiItems.length === 0 || hasBlockedItems || !isMinOrderMet;
-  }, [isOnline, uiItems.length, hasBlockedItems, isMinOrderMet]);
+    return !isOnline || selectedItems.length === 0 || hasBlockedItems || !isMinOrderMet;
+  }, [isOnline, selectedItems.length, hasBlockedItems, isMinOrderMet]);
 
   /**
    * 전체 선택 토글
@@ -279,28 +286,33 @@ export default function CartScreen() {
       Alert.alert('오프라인', '오프라인에서는 주문할 수 없습니다.');
       return;
     }
+    if (selectedItems.length === 0) {
+      Alert.alert('선택 상품 없음', '선택된 상품이 없습니다.');
+      return;
+    }
     if (orderLockRef.current) return;
 
     orderLockRef.current = true;
     try {
-      const localTotal = uiItems.reduce(
+      const isPartialSelection = selectedItems.length !== uiItems.length;
+      const localTotal = selectedItems.reduce(
         (sum, it) => sum + Number(it.price) * Number(it.quantity),
         0,
       );
 
-      if (Number(summary?.totalPrice || 0) !== localTotal) {
+      if (!isPartialSelection && Number(summary?.totalPrice || 0) !== localTotal) {
         Alert.alert('동기화 중', '장바구니 금액을 다시 확인합니다.');
         await loadCartFromServer();
         return;
       }
 
-      const priceMap = uiItems.reduce<Record<string, number>>((acc, it) => {
+      const priceMap = selectedItems.reduce<Record<string, number>>((acc, it) => {
         acc[it.storeMenuId] = it.price;
         return acc;
       }, {});
 
-      await validateBeforeCheckout(priceMap);
-      navigation.navigate('Checkout');
+      await validateBeforeCheckout(priceMap, Array.from(selectedIds));
+      navigation.navigate('Checkout', { selectedIds: Array.from(selectedIds) });
     } catch (err: any) {
       if (err?.status === 401) {
         Alert.alert('로그인이 필요합니다', '다시 로그인해 주세요.');
@@ -506,7 +518,7 @@ export default function CartScreen() {
       >
         <View style={s.footerRow}>
           <Text style={s.footerLabel}>결제 예정 금액</Text>
-          <Text style={s.footerPrice}>{totalPrice.toLocaleString()}원</Text>
+          <Text style={s.footerPrice}>{selectedTotalPrice.toLocaleString()}원</Text>
         </View>
         {!isMinOrderMet ? (
           <Text style={s.minOrderText}>최소 주문 금액 {summary.minOrderAmount.toLocaleString()}원을 채워주세요.</Text>

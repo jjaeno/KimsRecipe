@@ -50,7 +50,20 @@ export default function StackNavigator() {
           ),
         })}
       />
-      <Stack.Screen name="Checkout" component={CheckoutScreen} options={{headerShown: false}}/>
+      <Stack.Screen
+        name="Checkout"
+        component={CheckoutScreen}
+        options={({ navigation }) => ({
+          title: '주문/결제',
+          headerTitleAlign: 'center',
+          headerTitleStyle: {fontSize: 18, fontWeight: '600'},
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Icon name="arrow-back-ios" size={20} color="#ffffff" />
+            </TouchableOpacity>
+          ),
+        })}
+      />
     </Stack.Navigator>
   );
 };

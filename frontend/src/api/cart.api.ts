@@ -71,10 +71,13 @@ export async function clearCart() {
   return res.data.data;
 }
 
-export async function validateCart(priceMap: Record<string, number>) {
+export async function validateCart(priceMap: Record<string, number>, selectedIds?: string[]) {
   try {
     const res = await client.get<ApiResponse<ValidateResponse>>('/v1/cart/validate', {
-      params: { priceMap: JSON.stringify(priceMap) },
+      params: { 
+        priceMap: JSON.stringify(priceMap) ,
+        selectedIds: selectedIds ? JSON.stringify(selectedIds) : undefined
+      },
     });
     if (!res.data?.success) {
       throw new Error(res.data?.message || '장바구니 검증 실패');
