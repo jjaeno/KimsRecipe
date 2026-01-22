@@ -205,7 +205,7 @@ async function clearCart(userId) {
   });
 }
 
-async function validateCart({ userId, priceMap }) {
+async function validateCart({ userId, priceMap, selectedIds }) {
   // 판매상태/가격 재검증: 위변조/품절/숨김은 409로 차단한다.
   const cart = await getCartByUser(userId);
   if (!cart) {
@@ -213,10 +213,15 @@ async function validateCart({ userId, priceMap }) {
   }
 
   const items = await getCartItemsWithMenu(cart.cartId);
-  const summary = await getCartSummary(cart, items);
+  // selectedIds가 주어지면 필터링
+  const filteredItems = Array.isArray(selectedIds) && selectedIds.length > 0
+    ? items.filter((it) => selectedIds.includes(String(it.storeMenuId)) || selectedIds.includes(Number(it.storeMenuId)))
+    : items;
+
+  const summary = await getCartSummary(cart, filteredItems);
 
   const invalidItems = [];
-  for (const item of items) {
+  for (const item of filteredItems) {
     if (item.menuStatus === 'SOLD_OUT') {
       invalidItems.push({
         storeMenuId: String(item.storeMenuId),
@@ -262,7 +267,7 @@ async function validateCart({ userId, priceMap }) {
     throw new AppError(409, code, message, { items: invalidItems, summary });
   }
 
-  return { valid: true, cartId: cart.cartId, items: normalizeCartItems(items), summary };
+  return { valid: true, cartId: cart.cartId, items: normalizeCartItems(filteredItems), summary };
 }
 
 //=====================SQL Functions================================================

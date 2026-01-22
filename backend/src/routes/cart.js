@@ -85,7 +85,12 @@ async function validateCart(req, res, next) {
     // priceMap은 GET 쿼리로 전달된다. 예: ?priceMap={"12":4500}
     const raw = req.query.priceMap;
     const priceMap = raw ? JSON.parse(raw) : null;
-    const result = await cartService.validateCart({ userId: req.user.id, priceMap });
+
+    // selectedIds는 GET 쿼리로 전달된다. 예: ?selectedIds=[12,34]
+    const rawSelectedIds = req.query.selectedIds;
+    const selectedIds = rawSelectedIds ? JSON.parse(rawSelectedIds) : null;
+    
+    const result = await cartService.validateCart({ userId: req.user.id, priceMap, selectedIds });
     return success(res, result, '장바구니 검증 성공');
   } catch (err) {
     return next(err);
