@@ -21,7 +21,7 @@ async function getCart(userId) {
     return { cartId: null, storeId: null, items: [], summary: emptySummary() };
   }
   const items = await getCartItemsWithMenu(cart.cartId); // 아이템 및 메뉴 정보 조회
-  const summary = await getCartSummary(cart, items); // 요약 정보 계산
+  const summary = await getCartSummary(cart, items, userId); // 요약 정보 계산
   return {
     cartId: cart.cartId,
     storeId: cart.storeId,
@@ -270,6 +270,44 @@ async function validateCart({ userId, priceMap, selectedIds }) {
   return { valid: true, cartId: cart.cartId, items: normalizeCartItems(filteredItems), summary };
 }
 
+function emptySummary() {
+  return {
+    storeId: null,
+    storeName: null,
+    minOrderAmount: 0,
+    baseDeliveryFee: 0,
+    totalPrice: 0,
+  };
+}
+
+function normalizeCartItems(items) {
+  return items.map((r) => ({
+    storeMenuId: String(r.storeMenuId),
+    name: r.name,
+    description: r.description,
+    price: r.price,
+    amount: r.amount,
+    image: r.imageUrl,
+    menuStatus: r.menuStatus,
+    quantity: r.quantity,
+    storeId: r.storeId,
+  }));
+}
+
+async function getCartSummary(cart, items, userId, conn) {
+  const store = await getStoreById(cart.storeId, conn);
+  const totalPrice = items.reduce((sum, it) => sum + Number(it.price || 0) * Number(it.quantity || 0), 0);
+  const userPoints = await getUserPoints(userId, conn);
+  return {
+    storeId: cart.storeId,
+    storeName: store?.storeName || null,
+    minOrderAmount: Number(store?.minOrderAmount || 0),
+    baseDeliveryFee: Number(store?.baseDeliveryFee || 0),
+    totalPrice,
+    userPoints,
+  };
+}
+
 //=====================SQL Functions================================================
 
 async function findMenuById(storeMenuId, conn) {
@@ -376,40 +414,10 @@ async function getStoreById(storeId, conn) {
   return rows[0] || null;
 }
 
-function emptySummary() {
-  return {
-    storeId: null,
-    storeName: null,
-    minOrderAmount: 0,
-    baseDeliveryFee: 0,
-    totalPrice: 0,
-  };
-}
-
-function normalizeCartItems(items) {
-  return items.map((r) => ({
-    storeMenuId: String(r.storeMenuId),
-    name: r.name,
-    description: r.description,
-    price: r.price,
-    amount: r.amount,
-    image: r.imageUrl,
-    menuStatus: r.menuStatus,
-    quantity: r.quantity,
-    storeId: r.storeId,
-  }));
-}
-
-async function getCartSummary(cart, items, conn) {
-  const store = await getStoreById(cart.storeId, conn);
-  const totalPrice = items.reduce((sum, it) => sum + Number(it.price || 0) * Number(it.quantity || 0), 0);
-  return {
-    storeId: cart.storeId,
-    storeName: store?.storeName || null,
-    minOrderAmount: Number(store?.minOrderAmount || 0),
-    baseDeliveryFee: Number(store?.baseDeliveryFee || 0),
-    totalPrice,
-  };
+async function getUserPoints(userId, conn) {
+  const executor = withConn(conn);
+  const [rows] = await executor.query('SELECT userPoints FROM users WHERE userId = ? LIMIT 1', [userId]);
+  return Number(rows[0]?.userPoints || 0);
 }
 
 module.exports = {

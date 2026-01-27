@@ -17,6 +17,59 @@ router.get('/addresses', auth, async (req, res, next) => {
   }
 });
 
+// GET /api/addresses/me
+// 기본 배송지 조회
+router.get('/addresses/me', auth, async (req, res, next) => {
+  try {
+    const result = await checkoutService.getMyAddress(req.user.id);
+    return success(res, result, 'Default address fetched');
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// POST /api/addresses
+// 배송지 생성
+router.post('/addresses', auth, async (req, res, next) => {
+  try {
+    const result = await checkoutService.createAddress({
+      userId: req.user.id,
+      label: req.body.label,
+      recipientName: req.body.recipientName,
+      phone: req.body.phone,
+      postalCode: req.body.postalCode,
+      addressLine1: req.body.addressLine1,
+      addressLine2: req.body.addressLine2,
+      isDefault: req.body.isDefault,
+    });
+    return success(res, result, 'Address created');
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// PUT /api/addresses/:addressId
+// 배송지 수정
+router.put('/addresses/:addressId', auth, async (req, res, next) => {
+  try {
+    const result = await checkoutService.updateAddress({
+      userId: req.user.id,
+      addressId: Number(req.params.addressId),
+      label: req.body.label,
+      recipientName: req.body.recipientName,
+      phone: req.body.phone,
+      postalCode: req.body.postalCode,
+      addressLine1: req.body.addressLine1,
+      addressLine2: req.body.addressLine2,
+      isDefault: req.body.isDefault,
+    });
+    return success(res, result, 'Address updated');
+  } catch (err) {
+    return next(err);
+  }
+});
+
+
 
 // POST /api/orders
 // 주문 생성

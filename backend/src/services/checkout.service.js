@@ -22,11 +22,77 @@ async function withTransaction(fn) {
 // 배송지 목록 조회
 async function getAddresses(userId) {
   const [rows] = await pool.query(
-    `SELECT addressId, recipientName, phone, postalCode, addressLine1, addressLine2, isDefault
+    `SELECT addressId, userId, label, recipientName, phone, postalCode, addressLine1, addressLine2, isDefault, created_at, updated_at
      FROM addresses WHERE userId = ? ORDER BY isDefault DESC, addressId DESC`,
     [userId],
   );
   return { addresses: rows };
+}
+
+// 기본 배송지 조회
+async function getMyAddress(userId) {
+  const address = await getDefaultAddress(userId);
+  return address || null;
+}
+
+// 배송지 생성
+async function createAddress({ userId, label, recipientName, phone, postalCode, addressLine1, addressLine2, isDefault }) {
+  return withTransaction(async (conn) => {
+    if (Number(isDefault) === 1) {
+      await conn.query(`UPDATE addresses SET isDefault = 0 WHERE userId = ?`, [userId]);
+    }
+
+    const [result] = await conn.query(
+      `INSERT INTO addresses
+        (userId, label, recipientName, phone, postalCode, addressLine1, addressLine2, isDefault)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        userId,
+        label || null,
+        recipientName,
+        phone,
+        postalCode || null,
+        addressLine1,
+        addressLine2 || null,
+        Number(isDefault) === 1 ? 1 : 0,
+      ],
+    );
+
+    return await getAddressById(userId, result.insertId, conn);
+  });
+}
+
+// 배송지 수정
+async function updateAddress({ userId, addressId, label, recipientName, phone, postalCode, addressLine1, addressLine2, isDefault }) {
+  return withTransaction(async (conn) => {
+    const existing = await getAddressById(userId, addressId, conn);
+    if (!existing) {
+      throw new AppError(404, 'NOT_FOUND', 'Address not found.');
+    }
+
+    if (Number(isDefault) === 1) {
+      await conn.query(`UPDATE addresses SET isDefault = 0 WHERE userId = ? AND addressId != ?`, [userId, addressId]);
+    }
+
+    await conn.query(
+      `UPDATE addresses
+       SET label = ?, recipientName = ?, phone = ?, postalCode = ?, addressLine1 = ?, addressLine2 = ?, isDefault = ?
+       WHERE userId = ? AND addressId = ?`,
+      [
+        label || null,
+        recipientName,
+        phone,
+        postalCode || null,
+        addressLine1,
+        addressLine2 || null,
+        Number(isDefault) === 1 ? 1 : 0,
+        userId,
+        addressId,
+      ],
+    );
+
+    return await getAddressById(userId, addressId, conn);
+  });
 }
 
 // 주문 생성 (cart -> order + order_items 스냅샷)
@@ -312,6 +378,9 @@ async function findMenuById(storeMenuId, conn) {
 
 module.exports = {
   getAddresses,
+  getMyAddress,
+  createAddress,
+  updateAddress,
   createOrder,
   createPayment,
   confirmPayment,
