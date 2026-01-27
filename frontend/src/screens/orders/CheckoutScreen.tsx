@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
   Switch,
 } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useCart } from '../../context/CartContext';
 import {
@@ -37,7 +37,7 @@ type OrderSnapshot = {
 };
 
 export default function CheckoutScreen() {
-  const navigation = useNavigation<any>(); // ???????????????????
+  const navigation = useNavigation<any>(); // 네비게이션
   const route = useRoute<any>();
   const selectedIds = route?.params?.selectedIds as string[] | undefined;
   const { cartItems, summary, loadCartFromServer } = useCart(); // 장바구니/요약
@@ -74,20 +74,28 @@ export default function CheckoutScreen() {
     return () => unsub(); // 구독 해제
   }, []);
 
-  useEffect(() => {
-    // 배송지 로드
-    (async () => {
-      setLoading(true); // 로딩 시작
-      try {
-        const data = await getAddresses(); // 주소 목록 조회
-        setAddresses(data?.addresses ?? []); // 상태 반영
-      } catch (err: any) {
-        Alert.alert('오류', err?.message || '배송지 조회 실패'); // 에러 안내
-      } finally {
-        setLoading(false); // 로딩 종료
-      }
-    })();
+  const loadAddresses = useCallback(async () => {
+    setLoading(true); // ?? ??
+    try {
+      const data = await getAddresses(); // ?? ?? ??
+      setAddresses(data?.addresses ?? []); // ?? ??
+    } catch (err: any) {
+      Alert.alert('??', err?.message || '??? ?? ??'); // ?? ??
+    } finally {
+      setLoading(false); // ?? ??
+    }
   }, []);
+
+  useEffect(() => {
+    loadAddresses();
+  }, [loadAddresses]);
+
+  useFocusEffect(
+    useCallback(() => {
+      // ?? ?? ? ??? ? ?? ??
+      loadAddresses();
+    }, [loadAddresses])
+  );
 
   useEffect(() => {
     // 포인트 입력 디바운스
@@ -211,7 +219,7 @@ export default function CheckoutScreen() {
   const handleAddressManage = () => {
     // 배송지 변경 화면 진입 전 스냅샷 비교
     clearOrderIfChanged('addressId');
-    navigation.navigate('AddressManage');
+    navigation.navigate('AddressEdit');
   };
 
   const handleCheckout = async () => {

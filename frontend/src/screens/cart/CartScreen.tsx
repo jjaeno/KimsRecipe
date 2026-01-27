@@ -7,6 +7,7 @@ import { useCart } from '../../context/CartContext';
 import type { CartItem } from '../../types/cart';
 import { Checkbox } from 'react-native-paper';
 import { moderateScale } from 'react-native-size-matters';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * FlatList에 들어가는 "행(row)" 타입 정의
@@ -40,11 +41,13 @@ export default function CartScreen() {
    * selectedIds: 선택 삭제를 위해 체크된 storeMenuId들을 Set으로 관리
    * isOnline: NetInfo 기반 온라인 여부
    * localLoading: 삭제/비우기 등 UI 액션 처리 중 로딩 표시용
+   * selectionReady: 선택 상태 복원 완료 여부 (AsyncStorage는 비동기라서 딜레이 발생하는걸 막기 위함)
    */
   const [uiItems, setUiItems] = useState<CartItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isOnline, setIsOnline] = useState(true);
   const [localLoading, setLocalLoading] = useState(false);
+  const [selectionReady, setSelectionReady] = useState(false);
 
   /**
    * footerH: footer 실제 높이(onLayout) 측정값
@@ -63,7 +66,11 @@ export default function CartScreen() {
   const pendingQtyRef = useRef<Map<string, number>>(new Map());
   const lastStableRef = useRef<CartItem[]>([]);
   const orderLockRef = useRef(false);
-
+  
+  // 메뉴 선택 상태 로컬 스토리지 키
+  const SELECTED_KEY = 'cart_selected_ids_v1';
+  // 이전 장바구니 상태 기억용 키
+  const CART_IDS_KEY = 'cart_ids_v1';
   /**
    * 최초 진입 시 서버에서 장바구니 로드
    */
@@ -78,6 +85,58 @@ export default function CartScreen() {
     setUiItems(cartItems);
     lastStableRef.current = cartItems;
   }, [cartItems]);
+
+  /**
+   * 선택 상태 복원
+    * - selectedIds + lastCartIds Key를 조합해서 복원
+    * - 해제 상태 유지 + 새로 담긴 아이템만 
+   */
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const rawSelected = await AsyncStorage.getItem(SELECTED_KEY);
+        const rawCartIds = await AsyncStorage.getItem(CART_IDS_KEY);
+        if (cancelled) return;
+
+        const savedSelected = rawSelected ? (JSON.parse(rawSelected) as string[]) : [];
+        const savedCartIds = rawCartIds ? (JSON.parse(rawCartIds) as string[]) : [];
+
+        const currentIds = cartItems.map((it) => it.storeMenuId);
+        const currentIdSet = new Set(currentIds);
+
+        // 기존 선택 유지 (현재 카트에 있는 것만)
+        const next = new Set(savedSelected.filter((id) => currentIdSet.has(id)));
+
+        // 새로 담긴 아이템만 자동 선택
+        const newIds = currentIds.filter((id) => !savedCartIds.includes(id));
+        newIds.forEach((id) => next.add(id));
+
+        // 저장된 선택이 전혀 없고 카트가 있다면 전체 선택 (최초 진입용)
+        if (savedSelected.length === 0 && currentIds.length > 0) {
+          currentIds.forEach((id) => next.add(id));
+        }
+
+        setSelectedIds(next);
+        setSelectionReady(true);
+      } catch {
+        setSelectedIds(new Set(cartItems.map((it) => it.storeMenuId)));
+        setSelectionReady(true);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [cartItems]);
+
+  /**
+   * 선택 상태 저장
+   */
+  useEffect(() => {
+    if (!selectionReady) return;
+    const ids = Array.from(selectedIds);
+    AsyncStorage.setItem(SELECTED_KEY, JSON.stringify(ids));
+    AsyncStorage.setItem(CART_IDS_KEY, JSON.stringify(cartItems.map((it) => it.storeMenuId)));
+  }, [selectedIds, selectionReady, cartItems]);
 
   /**
    * NetInfo 구독으로 온라인 상태 추적
@@ -442,7 +501,7 @@ export default function CartScreen() {
   /**
    * 로딩/에러/빈 장바구니 분기 UI
    */
-  if (loading || localLoading) {
+  if (loading || localLoading || !selectionReady) {
     return (
       <View style={s.center}>
         <ActivityIndicator />
@@ -516,13 +575,13 @@ export default function CartScreen() {
         style={s.footer}
         onLayout={(e) => setFooterH(e.nativeEvent.layout.height)} // 실제 높이 측정
       >
+        {!isMinOrderMet ? (
+          <Text style={s.minOrderText}>최소 주문 금액은 {summary.minOrderAmount.toLocaleString()}원 입니다.</Text>
+        ) : null}
         <View style={s.footerRow}>
           <Text style={s.footerLabel}>결제 예정 금액</Text>
           <Text style={s.footerPrice}>{selectedTotalPrice.toLocaleString()}원</Text>
         </View>
-        {!isMinOrderMet ? (
-          <Text style={s.minOrderText}>최소 주문 금액 {summary.minOrderAmount.toLocaleString()}원을 채워주세요.</Text>
-        ) : null}
         <TouchableOpacity style={[s.orderBtn, isOrderDisabled && s.btnDisabled]} onPress={onCheckout} disabled={isOrderDisabled}>
           <Text style={s.orderBtnText}>주문하기</Text>
         </TouchableOpacity>
@@ -623,7 +682,7 @@ const s = StyleSheet.create({
   footerRow: { paddingTop: 5, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   footerLabel: { color: '#111' },
   footerPrice: { fontSize: 18, fontWeight: '800' },
-  minOrderText: { marginTop: 6, color: '#ef4444' },
+  minOrderText: { fontSize: 12,marginTop: 6, color: '#ef4444' },
   orderBtn: { marginTop: 12, backgroundColor: '#009798', paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
   orderBtnText: { color: '#fff', fontWeight: '700' },
 

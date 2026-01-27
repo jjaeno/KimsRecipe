@@ -7,6 +7,8 @@ import TabNavigator from './TabNavigator';
 import LoginScreen from '../screens/auth/LoginScreen';
 import SignupScreen from '../screens/auth/SignupScreen';
 import CheckoutScreen from '../screens/orders/CheckoutScreen';
+import AddressEditScreen from '../screens/addresses/AddressEditScreen';
+import AddressSearchWebViewScreen from '../screens/addresses/AddressSearchWebViewScreen';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 export type RootStackParamList = {
@@ -17,6 +19,8 @@ export type RootStackParamList = {
   Login: undefined;
   Signup: undefined;
   Checkout: undefined;
+  AddressEdit: undefined;
+  AddressSearchWebView: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -64,6 +68,21 @@ export default function StackNavigator() {
           ),
         })}
       />
+      <Stack.Screen
+        name="AddressEdit"
+        component={AddressEditScreen}
+        options={({ navigation }) => ({
+          title: '주소 수정',
+          headerTitleAlign: 'center',
+          headerTitleStyle: { fontSize: 18, fontWeight: '600' },
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Icon name="arrow-back-ios" size={20} color="#ffffff" />
+            </TouchableOpacity>
+          ),
+        })}
+      />
+      <Stack.Screen name="AddressSearchWebView" component={AddressSearchWebViewScreen} options={{headerShown: false}}/>
     </Stack.Navigator>
   );
 };
