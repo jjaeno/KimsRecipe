@@ -6,6 +6,7 @@ import { useStore } from '../../context/StoreContext';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { moderateScale } from 'react-native-size-matters';
 import { useCart } from '../../context/CartContext';
+import { useWishList } from '../../context/WishListContext';
 
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Detail'>;
@@ -14,6 +15,8 @@ const DetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const {flatItems, selectedStoreId} = useStore();
   const {foodId} = route.params;
   const item = flatItems.find(i => i.id === foodId);
+  const { toggleWishlist, isInWishlist } = useWishList();
+  const isWished = item ? isInWishlist(item.id) : false;
 
   const [quantity, setQuantity] = useState(1); //수량
   const plus = () => setQuantity(q => q + 1);
@@ -48,7 +51,13 @@ const DetailScreen: React.FC<Props> = ({ navigation, route }) => {
       <View style={styles.header}>
         <Icon name="arrow-back-ios" size={24} color="#ffffff" style={{marginRight:10}} onPress={()=>navigation.goBack()}/>
         <View style={styles.headerCombine}>
-          <Icon name="favorite-outline" size={24} color="#ffffff" style={{marginRight:15}} onPress={()=>navigation.goBack()}/>
+          <Icon
+            name={isWished ? 'favorite' : 'favorite-outline'}
+            size={24}
+            color={isWished ? '#FF3B30' : '#ffffff'}
+            style={{marginRight:15}}
+            onPress={() => item && toggleWishlist(item.id)}
+          />
           <Icon name="shopping-cart" size={24} color="#ffffff" style={{marginRight:1}} onPress={()=>navigation.goBack()}/>
         </View>
       </View>

@@ -69,7 +69,7 @@ export default function TabNavigator() {
           tabBarLabel: makeLabel('홈'),
         }}
       />
-      <Tab.Screen name="Wishlist" component={WishListScreen} options={{ tabBarLabel: makeLabel('찜') }} />
+      <Tab.Screen name="Wishlist" component={WishListScreen} options={{ tabBarLabel: makeLabel('찜'), headerShown: false }} />
       <Tab.Screen name="Orders" component={OrderHistoryScreen} options={{ tabBarLabel: makeLabel('주문내역') }} />
       <Tab.Screen name="Mypage" component={MypageScreen} options={{ tabBarLabel: makeLabel('마이페이지') }} />
     </Tab.Navigator>
