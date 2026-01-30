@@ -7,6 +7,7 @@ import HomeScreen from '../screens/home/HomeScreen';
 import WishListScreen from '../screens/wishlist/WishListScreen';
 import OrderHistoryScreen from '../screens/orders/OrderHistoryScreen';
 import MypageScreen from '../screens/mypage/MypageScreen';
+import HomePartyTabScreen from '../screens/homeParty/HomePartyTabScreen';
 import HomeHeader from '../components/HomeHeader';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { moderateScale } from 'react-native-size-matters';
@@ -16,6 +17,7 @@ export type TabParamList = {
   Wishlist: undefined;
   Orders: undefined;
   Mypage: undefined;
+  HomeParty: undefined;
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -49,6 +51,10 @@ export default function TabNavigator() {
               iconName = 'receipt-long';
               iconSize = 23;
               break;
+            case 'HomeParty':
+              iconName = 'celebration';
+              iconSize = 26;
+              break;
             case 'Mypage':
               iconName = 'person';
               iconSize = 30;
@@ -69,6 +75,7 @@ export default function TabNavigator() {
           tabBarLabel: makeLabel('홈'),
         }}
       />
+      <Tab.Screen name="HomeParty" component={HomePartyTabScreen} options={{ tabBarLabel: makeLabel('홈파티'), headerShown: false }} />
       <Tab.Screen name="Wishlist" component={WishListScreen} options={{ tabBarLabel: makeLabel('찜'), headerShown: false }} />
       <Tab.Screen name="Orders" component={OrderHistoryScreen} options={{ tabBarLabel: makeLabel('주문내역') }} />
       <Tab.Screen name="Mypage" component={MypageScreen} options={{ tabBarLabel: makeLabel('마이페이지') }} />

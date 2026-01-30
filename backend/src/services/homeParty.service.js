@@ -1,5 +1,4 @@
 ﻿// Responsibility: 홈파티 예약 도메인 로직. 필수값 검증 및 Repository 호출만 수행하며, HTTP 응답/상태코드는 Controller가 담당한다.
-// 하지 않는 일: 라우팅, 응답 포맷 구성, 트랜잭션 관리(단일 insert라 불필요).
 
 const pool = require('../db/pool');
 const { AppError } = require('../utils/errors');
@@ -30,6 +29,48 @@ async function getReservation(userId, reservationId) {
   return reservation;
 }
 
+async function getRecommendedSet(storeId, eventType, headcount, conn) {
+  const executor = withConn(conn);
+  let [sets] = await executor.query(
+    `SELECT setId, setName, imageUrl, basePrice, recommendedMinHeadcount, recommendedMaxHeadcount
+     FROM home_party_sets
+     WHERE storeId = ? AND status = 'ACTIVE'
+       AND recommendedMinHeadcount <= ? AND recommendedMaxHeadcount >= ?
+     ORDER BY setId ASC`,
+    [storeId, headcount, headcount],
+  );
+
+  if (!sets.length) {
+    [sets] = await executor.query(
+      `SELECT setId, setName, imageUrl, basePrice, recommendedMinHeadcount, recommendedMaxHeadcount
+       FROM home_party_sets
+       WHERE storeId = ? AND status = 'ACTIVE'
+       ORDER BY setId ASC`,
+      [storeId],
+    );
+  }
+
+  if (!sets.length) return [];
+
+  const setIds = sets.map((set) => set.setId);
+  const [items] = await executor.query(
+    `SELECT hpsi.setId, hpsi.storeMenuId, sm.menuName, sm.price, sm.imageUrl, hpsi.quantity
+     FROM home_party_set_items hpsi
+     JOIN storemenus sm ON sm.storeMenuId = hpsi.storeMenuId
+     WHERE hpsi.setId IN (?)`,
+    [setIds],
+  );
+
+  const itemsBySetId = items.reduce((acc, item) => {
+    (acc[item.setId] ||= []).push(item);
+    return acc;
+  }, {});
+
+  return sets.map((set) => ({
+    ...set,
+    items: itemsBySetId[set.setId] || [],
+  }));
+}
 
 const withConn = (conn) => conn || pool;
 
@@ -80,6 +121,5 @@ module.exports = {
   createReservation,
   listReservations,
   getReservation,
+  getRecommendedSet,
 };
-
-

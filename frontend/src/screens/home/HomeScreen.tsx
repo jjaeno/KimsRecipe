@@ -1,6 +1,6 @@
 // Responsibility: 홈 화면. 매장/카테고리/메뉴 데이터를 표시하고 카테고리/검색/정렬/그리드-리스트 전환을 제공한다. 상태는 StoreContext에서 가져오며, 네트워크 호출은 Context 내부의 API 모듈을 통해 수행된다.
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,7 @@ import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/StackNavigator';
 import type { TabParamList } from '../../navigation/TabNavigator';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // 그리드 카드 가로폭 계산
 const screenWidth = Dimensions.get('window').width;
@@ -41,6 +42,20 @@ type Props = CompositeScreenProps<
  */
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const { stores, selectedStoreId, searchText, loading, error } = useStore();
+  
+  // AsyncStorage 데이터 로드 (디버깅용)
+  useEffect(() => {
+    const loadAsyncStorageData = async () => {
+      try {
+        const keys = await AsyncStorage.getAllKeys();
+        const items = await AsyncStorage.multiGet(keys);
+        console.log('AsyncStorage items:',items);
+      } catch (error) {
+        console.error('Error loading AsyncStorage data:', error);
+      }
+    };
+    loadAsyncStorageData();
+  }, []);
 
   // 선택된 매장 정보
   const selectedStore = useMemo(

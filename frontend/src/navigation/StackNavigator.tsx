@@ -9,6 +9,9 @@ import SignupScreen from '../screens/auth/SignupScreen';
 import CheckoutScreen from '../screens/orders/CheckoutScreen';
 import AddressEditScreen from '../screens/addresses/AddressEditScreen';
 import AddressSearchWebViewScreen from '../screens/addresses/AddressSearchWebViewScreen';
+import EventInfoInputScreen from '../screens/homeParty/EventInfoInputScreen';
+import SetConfigScreen from '../screens/homeParty/SetConfigScreen';
+import PaymentScreen from '../screens/homeParty/PaymentScreen';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 export type RootStackParamList = {
@@ -21,6 +24,9 @@ export type RootStackParamList = {
   Checkout: undefined;
   AddressEdit: undefined;
   AddressSearchWebView: undefined;
+  EventInfoInput: undefined;
+  SetConfig: undefined;
+  Payment: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -83,6 +89,20 @@ export default function StackNavigator() {
         })}
       />
       <Stack.Screen name="AddressSearchWebView" component={AddressSearchWebViewScreen} options={{headerShown: false}}/>
+      <Stack.Screen
+        name="EventInfoInput"
+        component={EventInfoInputScreen}
+        options={({ navigation }) => ({
+          title: '',
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Icon name="arrow-back-ios" size={20} color="#ffffff" />
+            </TouchableOpacity>
+          ),
+        })}
+      />
+      <Stack.Screen name="SetConfig" component={SetConfigScreen} options={{ title: '?? ??' }} />
+      <Stack.Screen name="Payment" component={PaymentScreen} options={{ title: '??' }} />
     </Stack.Navigator>
   );
 };
