@@ -30,6 +30,7 @@ export type CustomSetRouteParams = {
   initialSelectedItems?: SelectedItem[];
 
   existingSetConfig?: {
+    setId?: number;
     title?: string;
     items: SelectedItem[];
     recommendedMinHeadcount?: number;
@@ -40,6 +41,22 @@ export type CustomSetRouteParams = {
 };
 
 export type HomePartyMenuRouteParams = CustomSetRouteParams;
+
+export type HomePartyPaymentRouteParams = {
+  mode: CustomSetMode;
+  storeId: string;
+  eventType: string;
+  eventDateTime: string;
+  headcount: number;
+  budgetMin?: number;
+  budgetMax?: number;
+  selectedItems: SelectedItem[];
+  setConfigTitle: string;
+  setId?: number;
+  recommendedMinHeadcount?: number;
+  recommendedMaxHeadcount?: number;
+  userDisplayName: string;
+};
 
 export const MENU_SELECTION_STORAGE_PREFIX = 'homePartyMenuSelection';
 

@@ -14,7 +14,7 @@ import SetConfigScreen from '../screens/homeParty/SetConfigScreen';
 import PaymentScreen from '../screens/homeParty/PaymentScreen';
 import HomePartyMenuScreen from '../screens/homeParty/HomePartyMenuScreen';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import type { CustomSetRouteParams } from '../types/homeParty';
+import type { CustomSetRouteParams, HomePartyPaymentRouteParams } from '../types/homeParty';
 
 export type RootStackParamList = {
   Start: undefined;
@@ -28,7 +28,7 @@ export type RootStackParamList = {
   AddressSearchWebView: undefined;
   EventInfoInput: undefined;
   SetConfig: CustomSetRouteParams;
-  Payment: undefined;
+  Payment: HomePartyPaymentRouteParams;
   HomePartyMenu: CustomSetRouteParams;
 };
 
@@ -111,7 +111,18 @@ export default function StackNavigator() {
           headerShown: false,
         }}
       />
-      <Stack.Screen name="Payment" component={PaymentScreen} options={{ title: '결제' }} />
+      <Stack.Screen name="Payment" component={PaymentScreen} 
+        options={({ navigation }) => ({
+            title: '예약/결제',
+            headerTitleAlign: 'center',
+            headerTitleStyle: {fontSize: 18, fontWeight: '600'},
+            headerLeft: () => (
+              <TouchableOpacity onPress={() => navigation.goBack()}>
+                <Icon name="arrow-back-ios" size={20} color="#ffffff" />
+              </TouchableOpacity>
+            ),
+          })} 
+      />
       <Stack.Screen name="HomePartyMenu" component={HomePartyMenuScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );

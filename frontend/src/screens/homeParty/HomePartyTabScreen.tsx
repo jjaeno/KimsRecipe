@@ -102,6 +102,7 @@ export default function HomePartyTabScreen({ navigation }: Props) {
                 eventDateTime: eventInfo.eventDateTime,
                 headcount: eventInfo.headcount,
                 existingSetConfig: {
+                  setId: item.setId,
                   title: item.setName,
                   recommendedMinHeadcount: item.recommendedMinHeadcount,
                   recommendedMaxHeadcount: item.recommendedMaxHeadcount,

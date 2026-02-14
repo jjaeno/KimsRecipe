@@ -8,7 +8,6 @@ import {
   SafeAreaView,
   ScrollView,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { moderateScale } from 'react-native-size-matters';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -20,7 +19,7 @@ import {
   type HomePartyMenu,
   type SelectedItem,
 } from '../../types/homeParty';
-import { createHomePartyReservation, fetchHomePartyMenusByIds } from '../../api/homeParty';
+import { fetchHomePartyMenusByIds } from '../../api/homeParty';
 
 const mergeItems = (base: SelectedItem[], added: SelectedItem[]) => {
   const map = new Map<string, number>();
@@ -79,7 +78,6 @@ export default function SetConfigScreen({ navigation, route }: Props) {
   const [items, setItems] = useState<SelectedItem[]>(initialItems);
   const [menuMap, setMenuMap] = useState<MenuMap>({});
   const [loadingMenus, setLoadingMenus] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const initialItemsSignature = useMemo(() => buildItemsSignature(initialItems), [initialItems]);
   const lastAppliedInitialSignatureRef = useRef(initialItemsSignature);
   const menuIdsKey = useMemo(() => {
@@ -197,38 +195,34 @@ export default function SetConfigScreen({ navigation, route }: Props) {
       budgetMin,
       budgetMax,
       existingSetConfig: {
+        setId: existingSetConfig?.setId,
         title: setTitle,
         items,
+        recommendedMinHeadcount: existingSetConfig?.recommendedMinHeadcount,
+        recommendedMaxHeadcount: existingSetConfig?.recommendedMaxHeadcount,
       },
       initialSelectedItems: items,
       userDisplayName,
     });
   };
 
-  const submitReservation = async () => {
-    if (items.length === 0 || submitting) return;
-    setSubmitting(true);
-    try {
-      const result = await createHomePartyReservation({
-        storeId,
-        eventType,
-        headcount,
-        budgetMin,
-        budgetMax,
-        eventDateTime,
-        pickupDateTime: eventDateTime,
-        sourceType: 'CUSTOM',
-        baseSetId: null,
-        requestNote: '',
-        items,
-      });
-      Alert.alert('예약이 생성되었습니다.', `총 금액: ${result.totalAmount.toLocaleString()}원`);
-      navigation.navigate('Payment');
-    } catch (err: any) {
-      Alert.alert('예약 실패', err?.message || '예약을 생성하지 못했습니다.');
-    } finally {
-      setSubmitting(false);
-    }
+  const goToCheckout = () => {
+    if (items.length === 0) return;
+    navigation.navigate('Payment', {
+      mode,
+      storeId,
+      eventType,
+      eventDateTime,
+      headcount,
+      budgetMin,
+      budgetMax,
+      selectedItems: items,
+      setConfigTitle: setTitle,
+      setId: existingSetConfig?.setId,
+      recommendedMinHeadcount: existingSetConfig?.recommendedMinHeadcount,
+      recommendedMaxHeadcount: existingSetConfig?.recommendedMaxHeadcount,
+      userDisplayName,
+    });
   };
 
   const eventDateDisplay = useMemo(() => {
@@ -349,11 +343,11 @@ export default function SetConfigScreen({ navigation, route }: Props) {
           <Text style={styles.totalValue}>{totalAmount.toLocaleString()}원</Text>
         </View>
         <TouchableOpacity
-          style={[styles.ctaButton, (items.length === 0 || submitting) && styles.ctaButtonDisabled]}
-          onPress={submitReservation}
-          disabled={items.length === 0 || submitting}
+          style={[styles.ctaButton, items.length === 0 && styles.ctaButtonDisabled]}
+          onPress={goToCheckout}
+          disabled={items.length === 0}
         >
-          <Text style={styles.ctaText}>이 구성으로 예약하기</Text>
+          <Text style={styles.ctaText}>예약/결제로 이동</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -585,8 +579,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-
-
 
 
 

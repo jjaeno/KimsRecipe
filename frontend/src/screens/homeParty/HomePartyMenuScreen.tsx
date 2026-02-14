@@ -237,7 +237,15 @@ export default function HomePartyMenuScreen({ navigation, route }: Props) {
           headcount,
           budgetMin,
           budgetMax,
-          existingSetConfig: existingSetConfig || { items: [] },
+          existingSetConfig: existingSetConfig
+            ? {
+                setId: existingSetConfig.setId,
+                title: existingSetConfig.title,
+                items: existingSetConfig.items || [],
+                recommendedMinHeadcount: existingSetConfig.recommendedMinHeadcount,
+                recommendedMaxHeadcount: existingSetConfig.recommendedMaxHeadcount,
+              }
+            : { items: [] },
           initialSelectedItems: selectedArray,
           userDisplayName,
         };
