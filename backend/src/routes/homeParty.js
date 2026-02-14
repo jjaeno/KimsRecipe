@@ -10,6 +10,9 @@ const router = express.Router();
 // GET  /api/v1/home-party/sets/recommend : 추천 세트 조회
 // GET  /api/v1/home-party/reservations : 예약 목록 조회
 // GET  /api/v1/home-party/reservations/:reservationId : 예약 상세 조회
+// GET  /api/v1/home-party/categories : 홈파티 카테고리 조회
+// GET  /api/v1/home-party/menus : 홈파티 메뉴 조회
+// GET  /api/v1/home-party/menus/by-ids : 홈파티 메뉴 ID 목록 조회
 
 async function createReservation(req, res, next) {
   try {
@@ -52,10 +55,52 @@ async function getRecommendedSet(req, res, next) {
   }
 }
 
+async function getCategories(req, res, next) {
+  try {
+    const { storeId } = req.query;
+    if (!storeId) {
+      throw new AppError(400, 'INVALID_INPUT', 'storeId가 필요합니다.');
+    }
+    const categories = await homePartyService.getCategories(storeId);
+    return success(res, { categories }, '카테고리 조회 성공');
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function getMenus(req, res, next) {
+  try {
+    const { storeId, hpCategoryId, q } = req.query;
+    if (!storeId) {
+      throw new AppError(400, 'INVALID_INPUT', 'storeId가 필요합니다.');
+    }
+    const menus = await homePartyService.getMenus({ storeId, hpCategoryId, q });
+    return success(res, { menus }, '메뉴 조회 성공');
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function getMenusByIds(req, res, next) {
+  try {
+    const { ids } = req.query;
+    const idList = typeof ids === 'string' ? ids.split(',').filter(Boolean) : [];
+    if (idList.length === 0) {
+      throw new AppError(400, 'INVALID_INPUT', 'ids가 필요합니다.');
+    }
+    const menus = await homePartyService.getMenusByIds(idList);
+    return success(res, { menus }, '메뉴 조회 성공');
+  } catch (err) {
+    return next(err);
+  }
+}
+
 router.get('/sets/recommend', getRecommendedSet);
+router.get('/categories', getCategories);
+router.get('/menus', getMenus);
+router.get('/menus/by-ids', getMenusByIds);
 router.post('/reservations', auth, createReservation);
 router.get('/reservations', auth, listReservations);
 router.get('/reservations/:reservationId', auth, getReservation);
 
 module.exports = router;
-

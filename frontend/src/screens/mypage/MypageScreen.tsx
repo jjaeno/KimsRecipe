@@ -21,11 +21,18 @@ const MypageScreen: React.FC<Props> = ({navigation}) => {
     await AsyncStorage.removeItem('token')
     navigation.navigate('Login'); //추후에 navigation.reset 방식으로 교체
   };
+  const deleteInfo = async () => {
+    await AsyncStorage.removeItem('homePartyEventInfo');
+    alert('행사정보가 삭제되었습니다.');
+  };
   return (
     <View>
       <Text>마이페이지 화면입니다</Text>
       <TouchableOpacity onPress={()=> logout()}>
         <Text>로그아웃</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={()=> deleteInfo()}>
+        <Text>행사정보 삭제</Text>
       </TouchableOpacity>
     </View>
   );

@@ -1,5 +1,5 @@
-import React from 'react';
-import {TouchableOpacity, View, Text} from 'react-native';
+﻿import React from 'react';
+import {TouchableOpacity} from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import DetailScreen from '../screens/product/DetailScreen';
 import CartScreen from '../screens/cart/CartScreen';
@@ -12,7 +12,9 @@ import AddressSearchWebViewScreen from '../screens/addresses/AddressSearchWebVie
 import EventInfoInputScreen from '../screens/homeParty/EventInfoInputScreen';
 import SetConfigScreen from '../screens/homeParty/SetConfigScreen';
 import PaymentScreen from '../screens/homeParty/PaymentScreen';
+import HomePartyMenuScreen from '../screens/homeParty/HomePartyMenuScreen';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import type { CustomSetRouteParams } from '../types/homeParty';
 
 export type RootStackParamList = {
   Start: undefined;
@@ -25,8 +27,9 @@ export type RootStackParamList = {
   AddressEdit: undefined;
   AddressSearchWebView: undefined;
   EventInfoInput: undefined;
-  SetConfig: undefined;
+  SetConfig: CustomSetRouteParams;
   Payment: undefined;
+  HomePartyMenu: CustomSetRouteParams;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -42,7 +45,7 @@ export default function StackNavigator() {
       }
       }
       >
-      <Stack.Screen name="Login" component={LoginScreen} options={{ title: '로그인' , headerShown:false}} />
+      <Stack.Screen name="Login" component={LoginScreen} options={{ title: '로그인', headerShown: false }} />
       <Stack.Screen name="Signup" component={SignupScreen} options={{ title: '회원가입' }} />
       <Stack.Screen name="Tab" component={TabNavigator} options={{headerShown:false}}/>
       <Stack.Screen name="Detail" component={DetailScreen} options={{headerShown: false}}/>
@@ -101,9 +104,18 @@ export default function StackNavigator() {
           ),
         })}
       />
-      <Stack.Screen name="SetConfig" component={SetConfigScreen} options={{ title: '?? ??' }} />
-      <Stack.Screen name="Payment" component={PaymentScreen} options={{ title: '??' }} />
+      <Stack.Screen
+        name="SetConfig"
+        component={SetConfigScreen}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen name="Payment" component={PaymentScreen} options={{ title: '결제' }} />
+      <Stack.Screen name="HomePartyMenu" component={HomePartyMenuScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 };
+
+
 

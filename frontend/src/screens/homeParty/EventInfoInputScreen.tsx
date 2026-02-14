@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -29,6 +29,39 @@ export default function EventInfoInputScreen({ navigation }: Props) {
   const [headcount, setHeadcount] = useState(4);
   const [showTypePicker, setShowTypePicker] = useState(false);
 
+  useEffect(() => {
+    const loadEventInfo = async () => {
+      const json = await AsyncStorage.getItem(STORAGE_KEY);
+      if (!json) return;
+      try {
+        const info = JSON.parse(json) as {
+          eventType?: string;
+          headcount?: number;
+          eventDateTime?: string;
+        };
+
+        if (info.eventDateTime) {
+          const parsed = new Date(info.eventDateTime);
+          if (!Number.isNaN(parsed.getTime())) {
+            setDate(parsed);
+          }
+        }
+
+        if (typeof info.eventType === 'string') {
+          setEventType(EVENT_TYPES.includes(info.eventType) ? info.eventType : '기타');
+        }
+
+        if (typeof info.headcount === 'number' && Number.isFinite(info.headcount) && info.headcount > 0) {
+          setHeadcount(Math.floor(info.headcount));
+        }
+      } catch {
+        // ignore corrupted storage payload
+      }
+    };
+
+    loadEventInfo();
+  }, []);
+
   const onChangeDate = (event: any, selectedDate?: Date) => {
     if (event?.type === 'dismissed') {
       setShowPicker(false);
@@ -43,12 +76,15 @@ export default function EventInfoInputScreen({ navigation }: Props) {
     if (Platform.OS === 'android') {
       const nextDate = new Date(date);
       nextDate.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+      nextDate.setHours(12, 0, 0, 0);
       setDate(nextDate);
       setShowPicker(false);
       return;
     }
 
-    setDate(selectedDate);
+    const nextDate = new Date(selectedDate);
+    nextDate.setHours(12, 0, 0, 0);
+    setDate(nextDate);
     setShowPicker(false);
   };
 
@@ -62,11 +98,15 @@ export default function EventInfoInputScreen({ navigation }: Props) {
   }, [date]);
 
   const saveAndGoBack = async () => {
+    const normalized = new Date(date);
+    normalized.setHours(12, 0, 0, 0);
+
     const eventInfo = {
       eventType,
       headcount,
-      eventDateTime: date.toISOString(),
+      eventDateTime: normalized.toISOString(),
     };
+
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(eventInfo));
     navigation.goBack();
   };

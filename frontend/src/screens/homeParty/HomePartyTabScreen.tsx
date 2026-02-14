@@ -1,3 +1,4 @@
+﻿// 홈파티 메인 화면
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, SafeAreaView, FlatList, Image } from 'react-native';
 import { moderateScale } from 'react-native-size-matters';
@@ -7,6 +8,7 @@ import type { CompositeScreenProps } from '@react-navigation/native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { fetchRecommendedSet } from '../../api/homeParty';
+import type { RecommendedSet } from '../../api/homeParty';
 import type { TabParamList } from '../../navigation/TabNavigator';
 import type { RootStackParamList } from '../../navigation/StackNavigator';
 import { useStore } from '../../context/StoreContext';
@@ -27,10 +29,12 @@ const STORAGE_KEY = 'homePartyEventInfo';
 
 export default function HomePartyTabScreen({ navigation }: Props) {
   const { selectedStoreId } = useStore();
+  const storeId = String(Number(selectedStoreId) || 1);
   const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
   const [loading, setLoading] = useState(false);
-  const [setData, setSetData] = useState<any>(null);
+  const [setData, setSetData] = useState<RecommendedSet[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const userDisplayName = '김재노';
 
   useEffect(() => {
     const loadEventInfo = async () => {
@@ -55,26 +59,25 @@ export default function HomePartyTabScreen({ navigation }: Props) {
 
   useEffect(() => {
     if (!eventInfo) return;
-    const storeId = Number(selectedStoreId) || 1;
     setLoading(true);
     setError(null);
     setSetData(null);
 
     // 추천 세트 불러오기
     fetchRecommendedSet({
-      storeId,
+      storeId: Number(storeId),
       eventType: eventInfo.eventType,
       headcount: eventInfo.headcount,
     })
-      .then((set) => {
-        setSetData(set);
+      .then((sets) => {
+        setSetData(sets);
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [eventInfo, selectedStoreId]);
   
-  const renderSetCard = ({item}: {item: any}) => {
-    const thumbnail = item.imageUrl; // 세트 대표 이미지 URL
+  const renderSetCard = ({item}: {item: RecommendedSet}) => {
+    const thumbnail = item.imageUrl; // 세트 썸네일 이미지 URL
     return (
       <View style={styles.setCard}>
         {thumbnail ? (
@@ -88,8 +91,29 @@ export default function HomePartyTabScreen({ navigation }: Props) {
             {item.recommendedMinHeadcount}~{item.recommendedMaxHeadcount}인용
           </Text>
           <Text style={styles.setCardPrice}>{item.basePrice.toLocaleString()}원</Text>
-
-          <TouchableOpacity style={styles.setCardButton} onPress={() => navigation.navigate('SetConfig')}>
+          <TouchableOpacity
+            style={styles.setCardButton}
+            onPress={() => {
+              if (!eventInfo) return;
+              navigation.navigate('SetConfig', {
+                mode: 'EDIT',
+                storeId,
+                eventType: eventInfo.eventType,
+                eventDateTime: eventInfo.eventDateTime,
+                headcount: eventInfo.headcount,
+                existingSetConfig: {
+                  title: item.setName,
+                  recommendedMinHeadcount: item.recommendedMinHeadcount,
+                  recommendedMaxHeadcount: item.recommendedMaxHeadcount,
+                  items: (item.items || []).map((setItem) => ({
+                    hpMenuId: String(setItem.hpMenuId),
+                    quantity: Number(setItem.quantity) || 1,
+                  })),
+                },
+                userDisplayName,
+              });
+            }}
+          >
             <Text style={styles.setCardButtonText}>세트 구성 보기</Text>
           </TouchableOpacity>
         </View>
@@ -107,6 +131,21 @@ export default function HomePartyTabScreen({ navigation }: Props) {
     return `${y}년 ${m}월 ${day}일 (${w})`;
   }, [eventInfo?.eventDateTime]);
 
+  const handleDirectOrder = () => {
+    if (!eventInfo) {
+      navigation.navigate('EventInfoInput');
+      return;
+    }
+    navigation.navigate('HomePartyMenu', {
+      mode: 'CREATE',
+      storeId,
+      eventType: eventInfo.eventType,
+      eventDateTime: eventInfo.eventDateTime,
+      headcount: eventInfo.headcount,
+      userDisplayName,
+    });
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={{paddingBottom: moderateScale(30) }}>
@@ -115,18 +154,18 @@ export default function HomePartyTabScreen({ navigation }: Props) {
         </View>
         <View style={styles.content}>
           <View style={styles.infoSection}>
-            <Text style={styles.infoHeader}>행사음식, 이렇게 준비하세요</Text>
-            <Text style={styles.infoText}>집들이 음식, 생신/생일상, 손님초대 음식, 제사 음식 등 행사 음식메뉴입니다.</Text>
+            <Text style={styles.infoHeader}>행사 음식, 이렇게 준비해보세요</Text>
+            <Text style={styles.infoText}>집들이, 생신/생일상, 가족모임, 제사 상차림 등 행사 음식 메뉴입니다.</Text>
             <Text style={styles.infoText2}>행사 전에 미리 예약해주세요.</Text>
-            <Text style={[styles.infoText2, {marginBottom: moderateScale(20)}]}>행사날 3일 전까지는 예약해주셔야 준비에 차질이 없습니다.</Text>
+            <Text style={[styles.infoText2, {marginBottom: moderateScale(20)}]}>행사일 3~5일 전까지 예약해주셔야 준비에 차질이 없습니다.</Text>
           </View>
 
           {!eventInfo ? (
             <View>
-              <Text style={styles.cardTitle}>내 행사 정보</Text>
+              <Text style={styles.cardTitle}>나의 행사 정보</Text>
               <View style={styles.cardNone}>
-                <Text style={styles.cardDesc}>아직 행사 정보가 없어요</Text>
-                <Text style={styles.cardDesc}>행사 정보를 입력하면 맞춤 홈파티 세트를 추천해드릴게요</Text>
+                <Text style={styles.cardDesc}>아직 행사 정보가 없어요.</Text>
+                <Text style={styles.cardDesc}>행사 정보를 입력하면 맞춤 홈파티 세트를 추천해드릴게요.</Text>
                 <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('EventInfoInput')}>
                   <Text style={styles.primaryButtonText}>행사 정보 입력하기</Text>
                   <Icon name="arrow-forward-ios" size={moderateScale(12)} color="#009798" style={{marginTop: moderateScale(1), marginLeft: moderateScale(2)}} />
@@ -136,7 +175,7 @@ export default function HomePartyTabScreen({ navigation }: Props) {
           ) : (
             <>
               <View>
-                <Text style={styles.cardTitle}>내 행사 정보</Text>
+                <Text style={styles.cardTitle}>나의 행사 정보</Text>
                 <View style={styles.card}>
                   <View style={[styles.row, {justifyContent: 'space-between',}]}>
                     <Text style={styles.eventType}>{eventInfo.eventType}</Text>
@@ -150,7 +189,7 @@ export default function HomePartyTabScreen({ navigation }: Props) {
                   </View>
                   <View style={styles.row}>
                     <Icon name="people" size={20} color="#009798" />
-                    <Text style={styles.headcount}>{eventInfo.headcount}인</Text>
+                    <Text style={styles.headcount}>{eventInfo.headcount}명</Text>
                   </View>
 
                 </View>
@@ -166,9 +205,9 @@ export default function HomePartyTabScreen({ navigation }: Props) {
               ) : setData ? (
                 <View>
                   <Text style={styles.cardTitle}>추천 세트</Text>
-                  {/* 추천세트 카드(단일/배열 모두 대응 가능)*/}
+                  {/* 추천 세트 카드(복수 목록 지원) */}
                   {(() => {
-                    const sets = Array.isArray(setData) ? setData : [setData];
+                    const sets = setData || [];
                     return (
                       <FlatList
                         data={sets}
@@ -183,8 +222,8 @@ export default function HomePartyTabScreen({ navigation }: Props) {
                   })()}
                   <View>
                     <Text style={styles.infoText3}>원하는 메뉴로 직접 구성해보세요</Text>
-                    <TouchableOpacity style={styles.directOrderButton}onPress={() => navigation.navigate('DirectOrder')}>
-                      <Text style={styles.directOrderText}>행사음식 직접 구성하기</Text>
+                    <TouchableOpacity style={styles.directOrderButton} onPress={handleDirectOrder}>
+                      <Text style={styles.directOrderText}>행사 음식 직접 구성하기</Text>
                       <Icon name="arrow-forward-ios" size={moderateScale(12)} color="#009798" style={{marginTop: moderateScale(1)}} />
                     </TouchableOpacity>
                   </View>
@@ -369,6 +408,7 @@ const styles = StyleSheet.create({
   directOrderButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start',
   },
   directOrderText: {
     fontSize: moderateScale(13),
@@ -377,3 +417,4 @@ const styles = StyleSheet.create({
     marginRight: moderateScale(2),
   },
 });
+
