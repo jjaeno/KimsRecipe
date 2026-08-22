@@ -54,6 +54,18 @@ const buildItemsSignature = (items: SelectedItem[]) => {
     .join('|');
 };
 
+const extractAddOnItems = (combined: SelectedItem[], base: SelectedItem[]) => {
+  const baseMap = buildSelectedMap(base);
+  return combined
+    .map((item) => {
+      const hpMenuId = String(item.hpMenuId);
+      const qty = Number(item.quantity || 0);
+      const baseQty = Number(baseMap[hpMenuId] || 0);
+      return { hpMenuId, quantity: Math.max(0, qty - baseQty) };
+    })
+    .filter((item) => item.quantity > 0);
+};
+
 export default function SetConfigScreen({ navigation, route }: Props) {
   const {
     mode,
@@ -63,17 +75,24 @@ export default function SetConfigScreen({ navigation, route }: Props) {
     headcount,
     budgetMin,
     budgetMax,
+    baseItems: routeBaseItems,
+    addOnItems: routeAddOnItems,
     initialSelectedItems,
     existingSetConfig,
     userDisplayName,
   } = route.params;
 
+  const baseItems = useMemo(() => {
+    return mergeItems([], routeBaseItems || (mode === 'EDIT' ? existingSetConfig?.items || [] : []));
+  }, [mode, routeBaseItems, existingSetConfig?.items]);
+
+  const initialAddOnItems = useMemo(() => {
+    return mergeItems([], routeAddOnItems || initialSelectedItems || []);
+  }, [routeAddOnItems, initialSelectedItems]);
+
   const initialItems = useMemo(() => {
-    if (mode === 'EDIT') {
-      return mergeItems(existingSetConfig?.items || [], initialSelectedItems || []);
-    }
-    return mergeItems([], initialSelectedItems || []);
-  }, [mode, existingSetConfig, initialSelectedItems]);
+    return mergeItems(baseItems, initialAddOnItems);
+  }, [baseItems, initialAddOnItems]);
 
   const [items, setItems] = useState<SelectedItem[]>(initialItems);
   const [menuMap, setMenuMap] = useState<MenuMap>({});
@@ -95,6 +114,12 @@ export default function SetConfigScreen({ navigation, route }: Props) {
     });
   }, [storeId, eventType, eventDateTime, mode]);
 
+  const addOnItems = useMemo(() => {
+    if (baseItems.length === 0) return items;
+    // base를 제외한 추가 메뉴만 add-on으로 관리
+    return extractAddOnItems(items, baseItems);
+  }, [items, baseItems]);
+
   useEffect(() => {
     if (lastAppliedInitialSignatureRef.current === initialItemsSignature) return;
     lastAppliedInitialSignatureRef.current = initialItemsSignature;
@@ -102,10 +127,10 @@ export default function SetConfigScreen({ navigation, route }: Props) {
   }, [initialItemsSignature, initialItems]);
 
   useEffect(() => {
-    AsyncStorage.setItem(menuSelectionStorageKey, JSON.stringify(buildSelectedMap(items))).catch((err) => {
+    AsyncStorage.setItem(menuSelectionStorageKey, JSON.stringify(buildSelectedMap(addOnItems))).catch((err) => {
       console.warn('failed to persist menu selection from set config', err);
     });
-  }, [items, menuSelectionStorageKey]);
+  }, [addOnItems, menuSelectionStorageKey]);
 
   const setTitle = useMemo(() => {
     if (mode === 'EDIT') {
@@ -186,7 +211,7 @@ export default function SetConfigScreen({ navigation, route }: Props) {
       return;
     }
 
-    navigation.replace('HomePartyMenu', {
+    navigation.navigate('HomePartyMenu', {
       mode,
       storeId,
       eventType,
@@ -197,11 +222,14 @@ export default function SetConfigScreen({ navigation, route }: Props) {
       existingSetConfig: {
         setId: existingSetConfig?.setId,
         title: setTitle,
-        items,
+        items: mode === 'EDIT' ? baseItems : existingSetConfig?.items || [],
         recommendedMinHeadcount: existingSetConfig?.recommendedMinHeadcount,
         recommendedMaxHeadcount: existingSetConfig?.recommendedMaxHeadcount,
       },
-      initialSelectedItems: items,
+      // 메뉴 추가 화면에서는 현재 구성 전체를 base로 고정하고 신규 추가만 받는다.
+      baseItems: items,
+      addOnItems: [],
+      initialSelectedItems: [],
       userDisplayName,
     });
   };
@@ -579,6 +607,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-
-
-

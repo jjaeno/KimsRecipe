@@ -28,6 +28,9 @@ export type CustomSetRouteParams = {
   budgetMax?: number;
 
   initialSelectedItems?: SelectedItem[];
+  // EDIT 모드에서 base/add-on을 분리 전달하기 위한 필드
+  baseItems?: SelectedItem[];
+  addOnItems?: SelectedItem[];
 
   existingSetConfig?: {
     setId?: number;

@@ -34,9 +34,19 @@ const buildSelectedMap = (items?: SelectedItem[]) => {
   return map;
 };
 
+const mapToItems = (itemsMap: Record<string, number>): SelectedItem[] => {
+  return Object.entries(itemsMap)
+    .filter(([, qty]) => Number(qty) > 0)
+    .map(([hpMenuId, quantity]) => ({ hpMenuId, quantity: Number(quantity) }));
+};
+
 type Props = NativeStackScreenProps<RootStackParamList, 'HomePartyMenu'>;
 
 type MenuMap = Record<string, HomePartyMenu>;
+type SelectionState = {
+  baseItems: Record<string, number>;
+  addOnItems: Record<string, number>;
+};
 
 export default function HomePartyMenuScreen({ navigation, route }: Props) {
   const {
@@ -47,20 +57,30 @@ export default function HomePartyMenuScreen({ navigation, route }: Props) {
     headcount,
     budgetMin,
     budgetMax,
+    baseItems: routeBaseItems,
+    addOnItems: routeAddOnItems,
     existingSetConfig,
     initialSelectedItems,
     userDisplayName,
   } = route.params;
 
+  const baseItemsMap = useMemo(() => {
+    return buildSelectedMap(routeBaseItems || existingSetConfig?.items || []);
+  }, [routeBaseItems, existingSetConfig?.items]);
+
+  const initialAddOnMap = useMemo(() => {
+    return buildSelectedMap(routeAddOnItems || initialSelectedItems);
+  }, [routeAddOnItems, initialSelectedItems]);
+
   const [categories, setCategories] = useState<HomePartyCategory[]>([]);
   const [menus, setMenus] = useState<HomePartyMenu[]>([]);
   const [menuMap, setMenuMap] = useState<MenuMap>({});
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>('ALL');
-  const [selectedItems, setSelectedItems] = useState<Record<string, number>>(() => {
-    if (mode === 'CREATE') {
-      return buildSelectedMap(initialSelectedItems);
-    }
-    return {};
+  const [selectionState, setSelectionState] = useState<SelectionState>(() => {
+    return {
+      baseItems: baseItemsMap,
+      addOnItems: initialAddOnMap,
+    };
   });
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [loadingMenus, setLoadingMenus] = useState(false);
@@ -83,6 +103,13 @@ export default function HomePartyMenuScreen({ navigation, route }: Props) {
   }, [storeId, eventType, eventDateTime, mode]);
 
   useEffect(() => {
+    setSelectionState({
+      baseItems: baseItemsMap,
+      addOnItems: initialAddOnMap,
+    });
+  }, [baseItemsMap, initialAddOnMap]);
+
+  useEffect(() => {
     let active = true;
     setSelectionHydrated(false);
     const restoreSelectedItems = async () => {
@@ -91,7 +118,20 @@ export default function HomePartyMenuScreen({ navigation, route }: Props) {
         if (!active || !raw) return;
         const parsed = JSON.parse(raw);
         if (parsed && typeof parsed === 'object') {
-          setSelectedItems(parsed as Record<string, number>);
+          // 이전 버전 데이터 호환: base 메뉴는 add-on에서 제거
+          const nextAddOnItems = Object.entries(parsed as Record<string, number>).reduce<Record<string, number>>(
+            (acc, [hpMenuId, qty]) => {
+              const normalizedQty = Number(qty || 0);
+              if (baseItemsMap[hpMenuId] || normalizedQty <= 0) return acc;
+              acc[hpMenuId] = normalizedQty;
+              return acc;
+            },
+            {},
+          );
+          setSelectionState((prev) => ({
+            ...prev,
+            addOnItems: nextAddOnItems,
+          }));
         }
       } catch (err) {
         console.warn('failed to restore menu selection', err);
@@ -103,14 +143,14 @@ export default function HomePartyMenuScreen({ navigation, route }: Props) {
     return () => {
       active = false;
     };
-  }, [menuSelectionStorageKey]);
+  }, [menuSelectionStorageKey, baseItemsMap]);
 
   useEffect(() => {
     if (!selectionHydrated) return;
-    AsyncStorage.setItem(menuSelectionStorageKey, JSON.stringify(selectedItems)).catch((err) => {
+    AsyncStorage.setItem(menuSelectionStorageKey, JSON.stringify(selectionState.addOnItems)).catch((err) => {
       console.warn('failed to persist menu selection', err);
     });
-  }, [menuSelectionStorageKey, selectedItems, selectionHydrated]);
+  }, [menuSelectionStorageKey, selectionState.addOnItems, selectionHydrated]);
 
   useEffect(() => {
     let active = true;
@@ -171,26 +211,26 @@ export default function HomePartyMenuScreen({ navigation, route }: Props) {
   }, [storeId, selectedCategoryId]);
 
   const totalSelected = useMemo(() => {
-    return Object.values(selectedItems).reduce((sum, qty) => sum + qty, 0);
-  }, [selectedItems]);
+    return Object.values(selectionState.addOnItems).reduce((sum, qty) => sum + qty, 0);
+  }, [selectionState.addOnItems]);
 
   const totalAmount = useMemo(() => {
-    return Object.entries(selectedItems).reduce((sum, [hpMenuId, qty]) => {
+    return Object.entries(selectionState.addOnItems).reduce((sum, [hpMenuId, qty]) => {
       const menu = menuMap[hpMenuId];
       if (!menu || menu.menuStatus !== 'ON_SALE') return sum;
       return sum + menu.price * qty;
     }, 0);
-  }, [selectedItems, menuMap]);
+  }, [selectionState.addOnItems, menuMap]);
 
   const openConfirmModal = (modeOverride?: 'AUTO' | 'CONFIRM') => {
     setModalMode(modeOverride || 'CONFIRM');
-    setConfirmItems({ ...selectedItems });
+    setConfirmItems({ ...selectionState.addOnItems });
     setConfirmModalVisible(true);
   };
 
   const closeConfirmModal = () => {
     // Persist quantity/delete changes made in modal when user dismisses it.
-    setSelectedItems({ ...confirmItems });
+    setSelectionState((prev) => ({ ...prev, addOnItems: { ...confirmItems } }));
     setConfirmModalVisible(false);
   };
 
@@ -213,9 +253,8 @@ export default function HomePartyMenuScreen({ navigation, route }: Props) {
   };
 
   const goToSetConfig = (finalItems: Record<string, number>) => {
-    const selectedArray: SelectedItem[] = Object.entries(finalItems)
-      .filter(([, qty]) => qty > 0)
-      .map(([hpMenuId, quantity]) => ({ hpMenuId, quantity }));
+    const selectedArray = mapToItems(finalItems);
+    const baseItems = mapToItems(selectionState.baseItems);
 
     const setConfigParams = mode === 'CREATE'
       ? {
@@ -226,6 +265,8 @@ export default function HomePartyMenuScreen({ navigation, route }: Props) {
           headcount,
           budgetMin,
           budgetMax,
+          baseItems,
+          addOnItems: selectedArray,
           initialSelectedItems: selectedArray,
           userDisplayName,
         }
@@ -241,28 +282,29 @@ export default function HomePartyMenuScreen({ navigation, route }: Props) {
             ? {
                 setId: existingSetConfig.setId,
                 title: existingSetConfig.title,
-                items: existingSetConfig.items || [],
+                items: baseItems,
                 recommendedMinHeadcount: existingSetConfig.recommendedMinHeadcount,
                 recommendedMaxHeadcount: existingSetConfig.recommendedMaxHeadcount,
               }
             : { items: [] },
+          baseItems,
+          addOnItems: selectedArray,
           initialSelectedItems: selectedArray,
           userDisplayName,
         };
 
-    const state = navigation.getState();
-    const previousRoute = state.routes[state.index - 1];
-
-    if (previousRoute?.name === 'SetConfig') {
-      navigation.navigate('SetConfig', setConfigParams);
-      return;
-    }
-
-    navigation.replace('SetConfig', setConfigParams);
+    // 이전 SetConfig/HomePartyMenu 스택을 버리고 새 SetConfig만 유지
+    navigation.reset({
+      index: 1,
+      routes: [
+        { name: 'Tab' },
+        { name: 'SetConfig', params: setConfigParams },
+      ],
+    });
   };
 
   const finalizeAndGo = () => {
-    setSelectedItems({ ...confirmItems });
+    setSelectionState((prev) => ({ ...prev, addOnItems: { ...confirmItems } }));
     setConfirmModalVisible(false);
     if (modalMode === 'CONFIRM') {
       goToSetConfig(confirmItems);
@@ -284,9 +326,10 @@ export default function HomePartyMenuScreen({ navigation, route }: Props) {
 
   const renderMenu = ({ item }: { item: HomePartyMenu }) => {
     const hpMenuId = String(item.hpMenuId);
-    const isSelected = Boolean(selectedItems[hpMenuId]);
+    const isBaseIncluded = Boolean(selectionState.baseItems[hpMenuId]);
+    const isSelected = Boolean(selectionState.addOnItems[hpMenuId]);
     const isSoldOut = item.menuStatus === 'SOLD_OUT';
-    const canAdd = !isSelected && !isSoldOut;
+    const canAdd = !isBaseIncluded && !isSelected && !isSoldOut;
 
     return (
       <View>
@@ -311,10 +354,10 @@ export default function HomePartyMenuScreen({ navigation, route }: Props) {
             onPress={() => {
               if (!canAdd) return;
               const nextSelected = {
-                ...selectedItems,
-                [hpMenuId]: (selectedItems[hpMenuId] || 0) + 1,
+                ...selectionState.addOnItems,
+                [hpMenuId]: (selectionState.addOnItems[hpMenuId] || 0) + 1,
               };
-              setSelectedItems(nextSelected);
+              setSelectionState((prev) => ({ ...prev, addOnItems: nextSelected }));
               if (!hasShownFirstAddModal) {
                 setHasShownFirstAddModal(true);
                 setConfirmItems(nextSelected);
@@ -324,7 +367,7 @@ export default function HomePartyMenuScreen({ navigation, route }: Props) {
             }}
           >
             <Text style={styles.addButtonText}>
-              {isSoldOut ? '품절' : isSelected ? '담김' : '+담기'}
+              {isSoldOut ? '품절' : isBaseIncluded ? '담김' : isSelected ? '담김' : '+담기'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -416,11 +459,11 @@ export default function HomePartyMenuScreen({ navigation, route }: Props) {
               renderItem={renderCategory}
             />
           </View>
-          {mode === 'EDIT' && existingSetConfig?.items?.length ? (
+          {Object.keys(selectionState.baseItems).length > 0 ? (
             <View style={styles.summaryBox}>
               <Text style={styles.summaryTitle}>현재 구성</Text>
               <Text style={styles.summaryText}>
-                {existingSetConfig.items.length}개 메뉴가 유지됩니다. 추가할 메뉴를 선택해주세요.
+                {Object.keys(selectionState.baseItems).length}개 메뉴가 유지됩니다. 추가할 메뉴를 선택해주세요.
               </Text>
             </View>
           ) : null}
@@ -635,11 +678,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#c5c5c5',
   },
   addButtonSelected: {
-    backgroundColor: '#9c9c9c',
+    backgroundColor: '#c5c5c5',
   },
   addButtonText: {
     color: '#ffffff',
     fontSize: moderateScale(13),
+
+
+    
     fontWeight: '600',
   },
   footer: {

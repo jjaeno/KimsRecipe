@@ -54,6 +54,7 @@ const WishListScreen: React.FC = () => {
         <Icon name="favorite" size={25} color="#E74C3C" />
       </TouchableOpacity>
       <View style={s.bodyRow}>
+        <Image source={{ uri: item.imageUrl ?? '' }} style={s.thumb} resizeMode="cover" />
         <View style={s.textArea}>
           <Text style={s.menuName}>
             {`${item.menuName}${item.amount ? ' (' + item.amount + ')' : ''}`}
@@ -63,7 +64,6 @@ const WishListScreen: React.FC = () => {
             <Text style={s.cartBtnText}>장바구니 담기</Text>
           </TouchableOpacity>
         </View>
-        <Image source={{ uri: item.imageUrl ?? '' }} style={s.thumb} resizeMode="cover" />
       </View>
     </View>
   );
@@ -139,7 +139,7 @@ const s = StyleSheet.create({
   },
   heartBtn: { position: 'absolute', top: 16, left: 16 },
   bodyRow: { flexDirection: 'row', marginTop: moderateScale(35) },
-  textArea: { flex: 1 },
+  textArea: { flex: 1, marginLeft: moderateScale(10) },
   menuName: { fontSize: 14, color: '#222222' },
   price: { fontSize: 16, fontWeight: '700', marginTop: 6, marginBottom: 6 },
   cartBtn: {
@@ -154,7 +154,7 @@ const s = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   cartBtnText: { color: '#FFFFFF', fontSize: 13 },
-  thumb: { width: 80, height: 80, borderRadius: 12 },
+  thumb: { width: 100, height: 100, borderRadius: 12 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
   subText: { marginTop: 8, color: '#666' },
   emptyText: { color: '#666' },
